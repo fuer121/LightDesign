@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LightDesign — 原型</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,"Noto Sans SC",sans-serif;background:#f5f5f7;color:#1d1d1f;min-height:100vh}
+header{background:#fff;border-bottom:1px solid #e5e5e7;padding:0 32px;height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.logo{font-size:18px;font-weight:700;color:#1d1d1f;letter-spacing:-.3px}
+.logo span{color:#6366f1}
+.header-right{display:flex;align-items:center;gap:16px}
+.avatar{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;cursor:pointer}
+.container{max-width:960px;margin:0 auto;padding:40px 24px}
+.page{display:none}
+.page.active{display:block;animation:fadeIn .25s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.dash-hero{background:#fff;border-radius:16px;padding:48px;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,.04);margin-bottom:32px}
+.dash-hero h2{font-size:26px;font-weight:700;margin-bottom:8px;letter-spacing:-.4px}
+.dash-hero p{color:#86868b;font-size:15px;margin-bottom:28px}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:12px 28px;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;border:none;transition:all .15s}
+.btn-primary{background:#6366f1;color:#fff;box-shadow:0 2px 8px rgba(99,102,241,.3)}
+.btn-primary:hover{background:#4f46e5;transform:translateY(-1px);box-shadow:0 4px 14px rgba(99,102,241,.4)}
+.btn-secondary{background:#f5f5f7;color:#1d1d1f}
+.btn-secondary:hover{background:#e8e8ed}
+.btn-outline{background:#fff;color:#6366f1;border:1.5px solid #6366f1}
+.btn-outline:hover{background:#f5f3ff}
+.btn-sm{padding:6px 14px;font-size:13px;border-radius:7px}
+.btn-xs{padding:4px 10px;font-size:12px;border-radius:6px}
+.section-title{font-size:15px;font-weight:600;color:#86868b;text-transform:uppercase;letter-spacing:.5px;margin-bottom:16px}
+.task-list{display:flex;flex-direction:column;gap:10px}
+.task-card{background:#fff;border-radius:12px;padding:18px 22px;display:flex;align-items:center;gap:16px;box-shadow:0 1px 3px rgba(0,0,0,.04);transition:box-shadow .15s}
+.task-card:hover{box-shadow:0 2px 10px rgba(0,0,0,.08)}
+.task-card .thumb{width:56px;height:56px;border-radius:10px;background:#f0f0f5;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:22px}
+.task-card .info{flex:1;min-width:0}
+.task-card .info .title{font-weight:600;font-size:15px;margin-bottom:3px}
+.task-card .info .meta{font-size:13px;color:#86868b}
+.task-card .actions{display:flex;gap:8px;flex-shrink:0}
+.badge{display:inline-block;padding:2px 8px;border-radius:5px;font-size:11px;font-weight:600}
+.badge-success{background:#ecfdf5;color:#059669}
+.badge-draft{background:#fef3c7;color:#d97706}
+.badge-error{background:#fef2f2;color:#dc2626}
+.empty-state{text-align:center;padding:60px 24px;color:#86868b}
+.empty-state .icon{font-size:48px;margin-bottom:16px;opacity:.6}
+.empty-state p{font-size:14px}
+.back-link{display:inline-flex;align-items:center;gap:6px;font-size:14px;color:#6366f1;cursor:pointer;margin-bottom:24px;font-weight:500;background:none;border:none}
+.back-link:hover{color:#4f46e5}
+.form-page-title{font-size:24px;font-weight:700;margin-bottom:32px;letter-spacing:-.3px}
+.form-section{margin-bottom:32px}
+.form-section label{display:block;font-size:14px;font-weight:600;margin-bottom:10px}
+.upload-zone{border:2px dashed #d2d2d7;border-radius:14px;padding:48px;text-align:center;cursor:pointer;transition:all .15s;background:#fafafa}
+.upload-zone:hover{border-color:#6366f1;background:#f5f3ff}
+.upload-zone.has-image{border-style:solid;border-color:#e5e5e7;padding:16px;background:#fff}
+.upload-zone .icon{font-size:36px;margin-bottom:12px}
+.upload-zone p{font-size:14px;color:#86868b}
+.upload-zone .hint{font-size:12px;color:#aeaeb2;margin-top:6px}
+.upload-preview{position:relative;display:inline-block}
+.upload-preview img{max-height:200px;border-radius:10px}
+.upload-preview .remove{position:absolute;top:-8px;right:-8px;width:24px;height:24px;border-radius:50%;background:#1d1d1f;color:#fff;border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:12px}
+.text-input{width:100%;padding:12px 16px;border:1.5px solid #d2d2d7;border-radius:10px;font-size:14px;outline:none;transition:border-color .15s;font-family:inherit}
+.text-input:focus{border-color:#6366f1;box-shadow:0 0 0 3px rgba(99,102,241,.12)}
+.text-input.error{border-color:#dc2626}
+.text-input-row{display:flex;flex-direction:column;gap:10px}
+.char-count{text-align:right;font-size:12px;color:#aeaeb2;margin-top:4px}
+.select-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px}
+.select-card{border:2px solid #e5e5e7;border-radius:12px;padding:18px 14px;cursor:pointer;text-align:center;transition:all .15s;font-size:14px;font-weight:500;background:#fff}
+.select-card:hover{border-color:#c7c7cc}
+.select-card.selected{border-color:#6366f1;background:#f5f3ff;color:#6366f1;box-shadow:0 0 0 3px rgba(99,102,241,.12)}
+.select-card .icon{font-size:24px;margin-bottom:8px;display:block}
+.form-footer{display:flex;gap:12px;padding-top:8px}
+.gen-container{text-align:center;padding:80px 24px}
+.gen-preview{width:320px;height:320px;border-radius:16px;background:#f0f0f5;margin:0 auto 32px;display:flex;align-items:center;justify-content:center;font-size:60px;overflow:hidden}
+.gen-preview img{width:100%;height:100%;object-fit:cover}
+.progress-bar{width:320px;height:6px;border-radius:3px;background:#e5e5e7;margin:0 auto 16px;overflow:hidden}
+.progress-bar .fill{height:100%;border-radius:3px;background:linear-gradient(90deg,#6366f1,#8b5cf6);transition:width .4s ease}
+.gen-status{font-size:14px;color:#86868b;margin-bottom:24px}
+.gen-status .time{color:#1d1d1f;font-weight:600}
+.result-layout{display:grid;grid-template-columns:1fr 340px;gap:24px;align-items:start}
+.result-preview-area{background:#fff;border-radius:16px;padding:32px;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+.result-preview-area .img-wrap{border-radius:12px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,.1);position:relative;max-width:100%}
+.result-preview-area img{width:100%;display:block}
+.adjust-panel{background:#fff;border-radius:16px;padding:24px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+.adjust-panel h3{font-size:17px;font-weight:700;margin-bottom:20px}
+.adjust-row{margin-bottom:18px}
+.adjust-row .label{font-size:13px;font-weight:600;color:#86868b;margin-bottom:6px}
+.adjust-row .controls{display:flex;align-items:center;gap:10px}
+.adjust-row .controls button{width:32px;height:32px;border-radius:8px;border:1.5px solid #d2d2d7;background:#fff;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;transition:all .1s}
+.adjust-row .controls button:hover{background:#f5f5f7}
+.adjust-row .controls .value{font-size:15px;font-weight:600;min-width:32px;text-align:center}
+.adjust-row select{flex:1;padding:8px 12px;border:1.5px solid #d2d2d7;border-radius:8px;font-size:14px;outline:none;font-family:inherit;cursor:pointer}
+.adjust-row select:focus{border-color:#6366f1}
+.result-actions{display:flex;flex-direction:column;gap:10px;margin-top:24px}
+.toast{position:fixed;bottom:32px;left:50%;transform:translateX(-50%);background:#1d1d1f;color:#fff;padding:14px 24px;border-radius:12px;font-size:14px;font-weight:500;box-shadow:0 8px 30px rgba(0,0,0,.2);display:none;align-items:center;gap:16px;z-index:200}
+.toast.show{display:flex;animation:slideUp .3s ease}
+@keyframes slideUp{from{opacity:0;transform:translateX(-50%) translateY(10px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+.toast .toast-btn{padding:6px 14px;border-radius:7px;background:#6366f1;color:#fff;border:none;cursor:pointer;font-size:13px;font-weight:600}
+@media(max-width:768px){.result-layout{grid-template-columns:1fr}.select-cards{grid-template-columns:repeat(2,1fr)}.task-card{flex-wrap:wrap}.task-card .actions{width:100%;justify-content:flex-end;margin-top:8px}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">Light<span>Design</span></div>
+  <div class="header-right">
+    <span style="font-size:13px;color:#86868b;">预览模式</span>
+    <div class="avatar" title="用户">U</div>
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- ====== 工作台 ====== -->
+  <div id="page-dashboard" class="page active">
+    <div class="dash-hero">
+      <h2>AI 电商产品主图生成</h2>
+      <p>上传商品照片，输入卖点文案，3 分钟内获得可直接上架的专业主图</p>
+      <button class="btn btn-primary" onclick="window.LD.goTo('create')">＋ 新建生成任务</button>
+    </div>
+    <div class="section-title">最近任务</div>
+    <div id="taskList" class="task-list"></div>
+    <div id="emptyTasks" class="empty-state" style="display:none">
+      <div class="icon">📷</div>
+      <p>还没有生成任务，点击上方按钮开始你的第一张产品主图</p>
+    </div>
+  </div>
+
+  <!-- ====== 新建生成任务 ====== -->
+  <div id="page-create" class="page">
+    <button class="back-link" onclick="window.LD.goTo('dashboard')">← 返回工作台</button>
+    <div class="form-page-title">新建生成任务</div>
+
+    <div class="form-section">
+      <label>1. 上传商品照片</label>
+      <div class="upload-zone" id="uploadZone" onclick="window.LD.simulateUpload()">
+        <div class="icon">📷</div>
+        <p>点击或拖拽上传商品照片</p>
+        <p class="hint">支持 JPG / PNG，最大 10MB，最小 400×400px</p>
+      </div>
+      <div class="upload-zone has-image" id="uploadPreview" style="display:none">
+        <div class="upload-preview">
+          <img id="previewImg" src="" alt="预览">
+          <button class="remove" onclick="window.LD.removeImage(event)">✕</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-section">
+      <label>2. 卖点文案（每条 ≤15 字）</label>
+      <div class="text-input-row">
+        <div>
+          <input class="text-input" id="selling1" placeholder="卖点 1（必填，如：限时五折抢购）" maxlength="15" oninput="window.LD.checkForm()">
+          <div class="char-count"><span id="count1">0</span>/15</div>
+        </div>
+        <div>
+          <input class="text-input" id="selling2" placeholder="卖点 2（必填，如：买二送一）" maxlength="15" oninput="window.LD.checkForm()">
+          <div class="char-count"><span id="count2">0</span>/15</div>
+        </div>
+        <div>
+          <input class="text-input" id="selling3" placeholder="卖点 3（选填，如：全国包邮）" maxlength="15" oninput="window.LD.checkForm()">
+          <div class="char-count"><span id="count3">0</span>/15</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-section">
+      <label>3. 目标平台</label>
+      <div class="select-cards" id="platformCards">
+        <div class="select-card" data-value="amazon" onclick="window.LD.selectCard(this,'platformCards')"><span class="icon">📦</span>亚马逊</div>
+        <div class="select-card" data-value="taobao" onclick="window.LD.selectCard(this,'platformCards')"><span class="icon">🛒</span>淘宝</div>
+        <div class="select-card" data-value="shopee" onclick="window.LD.selectCard(this,'platformCards')"><span class="icon">🏪</span>Shopee</div>
+        <div class="select-card" data-value="general" onclick="window.LD.selectCard(this,'platformCards')"><span class="icon">🌐</span>通用</div>
+      </div>
+    </div>
+
+    <div class="form-section">
+      <label>4. 风格方向</label>
+      <div class="select-cards" id="styleCards">
+        <div class="select-card" data-value="clean" onclick="window.LD.selectCard(this,'styleCards')"><span class="icon">🤍</span>简约白底</div>
+        <div class="select-card" data-value="lifestyle" onclick="window.LD.selectCard(this,'styleCards')"><span class="icon">🌿</span>场景化</div>
+        <div class="select-card" data-value="promo" onclick="window.LD.selectCard(this,'styleCards')"><span class="icon">🔥</span>促销感</div>
+      </div>
+    </div>
+
+    <div class="form-footer">
+      <button class="btn btn-primary" id="submitBtn" disabled onclick="window.LD.startGeneration()">生成产品主图</button>
+      <button class="btn btn-secondary" onclick="window.LD.goTo('dashboard')">取消</button>
+    </div>
+  </div>
+
+  <!-- ====== 生成等待 ====== -->
+  <div id="page-generating" class="page">
+    <button class="back-link" onclick="window.LD.cancelGeneration()">← 返回编辑</button>
+    <div class="gen-container">
+      <div class="gen-preview" id="genPreviewBox">
+        <span style="font-size:60px" id="genPlaceholder">📷</span>
+      </div>
+      <div class="progress-bar"><div class="fill" id="progressFill" style="width:0%"></div></div>
+      <div class="gen-status">生成中... 预计还需 <span class="time" id="timeLeft">30</span> 秒</div>
+      <div style="display:flex;gap:12px;justify-content:center">
+        <button class="btn btn-secondary btn-sm" onclick="window.LD.cancelGeneration()">取消生成</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====== 结果预览与导出 ====== -->
+  <div id="page-result" class="page">
+    <button class="back-link" onclick="window.LD.goTo('create')">← 返回编辑</button>
+    <div class="form-page-title">结果预览</div>
+    <div class="result-layout">
+      <div class="result-preview-area">
+        <div class="img-wrap"><img id="resultImage" src="" alt="生成结果"></div>
+      </div>
+      <div class="adjust-panel">
+        <h3>微调文字</h3>
+        <div class="adjust-row">
+          <div class="label">卖点 1 字号</div>
+          <div class="controls">
+            <button onclick="window.LD.changeSize('size1',-2)">−</button>
+            <span class="value" id="size1">24</span>
+            <button onclick="window.LD.changeSize('size1',2)">＋</button>
+          </div>
+        </div>
+        <div class="adjust-row">
+          <div class="label">卖点 1 位置</div>
+          <select id="pos1">
+            <option value="top">上方</option>
+            <option value="middle" selected>居中</option>
+            <option value="bottom">下方</option>
+          </select>
+        </div>
+        <div class="adjust-row">
+          <div class="label">卖点 2 字号</div>
+          <div class="controls">
+            <button onclick="window.LD.changeSize('size2',-2)">−</button>
+            <span class="value" id="size2">20</span>
+            <button onclick="window.LD.changeSize('size2',2)">＋</button>
+          </div>
+        </div>
+        <div class="adjust-row">
+          <div class="label">卖点 2 位置</div>
+          <select id="pos2">
+            <option value="top">上方</option>
+            <option value="middle" selected>居中</option>
+            <option value="bottom">下方</option>
+          </select>
+        </div>
+        <div class="result-actions">
+          <button class="btn btn-primary" onclick="window.LD.simulateExport()">导出图片</button>
+          <button class="btn btn-outline" onclick="window.LD.startGeneration()">重新生成</button>
+          <button class="btn btn-secondary" onclick="window.LD.saveAsTemplate()">保存为模板</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast">
+  <span id="toastMsg">图片已导出</span>
+  <button class="toast-btn" id="toastAction" onclick="window.LD.goTo('create')">创建新任务</button>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  // 数据
+  var tasks = [];
+  var genTimer = null;
+
+  // load
+  function loadTasks(){
+    try{ var s=localStorage.getItem('lightdesign_tasks'); tasks=s?JSON.parse(s):[]; }
+    catch(e){ tasks=[]; }
+    if(!tasks.length) tasks=[
+      {id:1,title:'商品主图 · 简约白底',platform:'amazon',style:'clean',date:'2026-05-01 14:30',status:'exported',thumbnail:'🖼️'},
+      {id:2,title:'商品主图 · 促销感',platform:'taobao',style:'promo',date:'2026-05-01 10:15',status:'exported',thumbnail:'🖼️'},
+      {id:3,title:'商品主图 · 场景化',platform:'shopee',style:'lifestyle',date:'2026-04-30 16:00',status:'draft',thumbnail:'🖼️'}
+    ];
+  }
+  function saveTasks(){ try{ localStorage.setItem('lightdesign_tasks',JSON.stringify(tasks)); }catch(e){} }
+
+  // render
+  function renderTasks(){
+    var list=document.getElementById('taskList'), empty=document.getElementById('emptyTasks');
+    if(!tasks.length){ list.innerHTML=''; empty.style.display='block'; return; }
+    empty.style.display='none';
+    var h='';
+    for(var i=0;i<tasks.length;i++){
+      var t=tasks[i], badge='', act='';
+      if(t.status==='exported'){ badge='<span class="badge badge-success">已导出</span>'; act='<button class="btn btn-outline btn-xs" onclick="window.LD.reuseTemplate('+t.id+')">复用模板</button>'; }
+      else if(t.status==='draft'){ badge='<span class="badge badge-draft">草稿</span>'; act='<button class="btn btn-secondary btn-xs" onclick="window.LD.goTo(\'create\')">继续编辑</button>'; }
+      else if(t.status==='failed'){ badge='<span class="badge badge-error">生成失败</span>'; act='<button class="btn btn-secondary btn-xs" onclick="window.LD.startGeneration()">重试</button>'; }
+      h+='<div class="task-card"><div class="thumb">'+t.thumbnail+'</div><div class="info"><div class="title">'+t.title+' '+badge+'</div><div class="meta">'+t.date+'</div></div><div class="actions">'+act+'</div></div>';
+    }
+    list.innerHTML=h;
+  }
+
+  function resetForm(){
+    document.getElementById('selling1').value='';
+    document.getElementById('selling2').value='';
+    document.getElementById('selling3').value='';
+    document.getElementById('count1').textContent='0';
+    document.getElementById('count2').textContent='0';
+    document.getElementById('count3').textContent='0';
+    resetSelectCards('platformCards');
+    resetSelectCards('styleCards');
+    document.getElementById('uploadZone').style.display='block';
+    document.getElementById('uploadPreview').style.display='none';
+    document.getElementById('previewImg').src='';
+    delete window.uploadedImageUrl;
+    checkForm();
+  }
+
+  function reuseTemplate(taskId){
+    var t=null;
+    for(var i=0;i<tasks.length;i++){ if(tasks[i].id===taskId){ t=tasks[i]; break; } }
+    if(!t) return;
+    resetForm();
+    if(t.platform) selectCardByValue('platformCards',t.platform);
+    if(t.style) selectCardByValue('styleCards',t.style);
+    checkForm();
+    goTo('create');
+  }
+
+  function goTo(page){
+    var pages=document.querySelectorAll('.page');
+    for(var i=0;i<pages.length;i++) pages[i].classList.remove('active');
+    var target=document.getElementById('page-'+page);
+    if(target) target.classList.add('active');
+    if(page==='dashboard') renderTasks();
+    window.scrollTo({top:0,behavior:'smooth'});
+  }
+
+  function simulateUpload(){
+    var colors=['#fef3c7','#dbeafe','#fce7f3','#d1fae5','#ede9fe'];
+    var c=colors[Math.floor(Math.random()*colors.length)];
+    var svg='<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400"><rect width="400" height="400" fill="'+c+'"/><circle cx="200" cy="160" r="60" fill="#fff" opacity="0.7"/><ellipse cx="200" cy="340" rx="100" ry="40" fill="#fff" opacity="0.5"/><text x="200" y="270" text-anchor="middle" font-size="16" fill="#666">商品示意图</text></svg>';
+    var blob=new Blob([svg],{type:'image/svg+xml'});
+    var url=URL.createObjectURL(blob);
+    document.getElementById('previewImg').src=url;
+    document.getElementById('uploadZone').style.display='none';
+    document.getElementById('uploadPreview').style.display='block';
+    window.uploadedImageUrl=url;
+    checkForm();
+  }
+
+  function removeImage(e){
+    e.stopPropagation();
+    document.getElementById('uploadZone').style.display='block';
+    document.getElementById('uploadPreview').style.display='none';
+    document.getElementById('previewImg').src='';
+    delete window.uploadedImageUrl;
+    checkForm();
+  }
+
+  function selectCard(el,groupId){
+    var cards=document.getElementById(groupId).querySelectorAll('.select-card');
+    for(var i=0;i<cards.length;i++) cards[i].classList.remove('selected');
+    el.classList.add('selected');
+    checkForm();
+  }
+
+  function resetSelectCards(groupId){
+    var cards=document.getElementById(groupId).querySelectorAll('.select-card');
+    for(var i=0;i<cards.length;i++) cards[i].classList.remove('selected');
+  }
+
+  function selectCardByValue(groupId,value){
+    var cards=document.getElementById(groupId).querySelectorAll('.select-card');
+    for(var i=0;i<cards.length;i++) if(cards[i].dataset.value===value) cards[i].classList.add('selected');
+  }
+
+  function getSelectedCard(groupId){
+    var sel=document.getElementById(groupId).querySelector('.select-card.selected');
+    return sel?sel.dataset.value:null;
+  }
+
+  function checkForm(){
+    var img=window.uploadedImageUrl;
+    var s1=document.getElementById('selling1').value.trim();
+    var s2=document.getElementById('selling2').value.trim();
+    var pf=getSelectedCard('platformCards');
+    var st=getSelectedCard('styleCards');
+    document.getElementById('submitBtn').disabled=!(img&&s1&&s2&&pf&&st);
+  }
+
+  function startGeneration(){
+    if(genTimer) return;
+    goTo('generating');
+    var box=document.getElementById('genPreviewBox');
+    box.innerHTML='<span style="font-size:60px" id="genPlaceholder">📷</span>';
+    if(window.uploadedImageUrl){
+      document.getElementById('genPlaceholder').style.display='none';
+      box.innerHTML='<img src="'+window.uploadedImageUrl+'" style="width:100%;height:100%;object-fit:cover">';
+    }
+    document.getElementById('progressFill').style.width='0%';
+    document.querySelector('.gen-status').innerHTML='生成中... 预计还需 <span class="time" id="timeLeft">30</span> 秒';
+    var elapsed=0, total=30000;
+    genTimer=setInterval(function(){
+      elapsed+=800;
+      document.getElementById('progressFill').style.width=Math.min(95,(elapsed/total)*100)+'%';
+      var tl=document.getElementById('timeLeft');
+      if(tl) tl.textContent=Math.max(1,Math.round((total-elapsed)/1000));
+      if(elapsed>60000){
+        document.querySelector('.gen-status').innerHTML='生成时间比预期长，请耐心等待... <button class="btn btn-outline btn-xs" onclick="window.LD.cancelGeneration()" style="margin-left:12px">取消</button>';
+        clearInterval(genTimer); genTimer=null; return;
+      }
+      if(elapsed>=total){ clearInterval(genTimer); genTimer=null; finishGeneration(); }
+    },800);
+  }
+
+  function finishGeneration(){
+    document.getElementById('progressFill').style.width='100%';
+    document.querySelector('.gen-status').innerHTML='生成完成！';
+    var c=document.createElement('canvas'); c.width=800; c.height=800;
+    var ctx=c.getContext('2d');
+    var g=ctx.createLinearGradient(0,0,800,800);
+    g.addColorStop(0,'#f8f9fa'); g.addColorStop(0.5,'#e9ecef'); g.addColorStop(1,'#dee2e6');
+    ctx.fillStyle=g; ctx.fillRect(0,0,800,800);
+    ctx.fillStyle='#fff'; ctx.shadowColor='rgba(0,0,0,0.1)'; ctx.shadowBlur=20;
+    ctx.fillRect(100,80,600,440);
+    ctx.shadowBlur=0; ctx.shadowColor='transparent';
+    var pg=ctx.createLinearGradient(300,200,500,400);
+    pg.addColorStop(0,'#6366f1'); pg.addColorStop(1,'#8b5cf6');
+    ctx.fillStyle=pg; ctx.beginPath(); ctx.roundRect(320,180,160,240,20); ctx.fill();
+    ctx.fillStyle='#fff'; ctx.font='bold 28px sans-serif'; ctx.textAlign='center';
+    ctx.fillText('PRODUCT',400,310);
+    var t1=document.getElementById('selling1').value.trim()||'限时五折抢购';
+    var t2=document.getElementById('selling2').value.trim()||'买二送一超值';
+    ctx.fillStyle='#dc2626'; ctx.font='bold 36px "Noto Sans SC", sans-serif'; ctx.fillText(t1,400,610);
+    ctx.fillStyle='#1d1d1f'; ctx.font='bold 28px "Noto Sans SC", sans-serif'; ctx.fillText(t2,400,660);
+    ctx.fillStyle='#dc2626'; ctx.fillRect(580,100,120,40);
+    ctx.fillStyle='#fff'; ctx.font='bold 20px "Noto Sans SC", sans-serif'; ctx.fillText('限时特惠',640,128);
+    document.getElementById('resultImage').src=c.toDataURL('image/png');
+    goTo('result');
+  }
+
+  function cancelGeneration(){
+    if(!confirm('确定取消本次生成吗？已填写的内容将保留。')) return;
+    if(genTimer){ clearInterval(genTimer); genTimer=null; }
+    goTo('create');
+  }
+
+  function changeSize(elId,delta){
+    var el=document.getElementById(elId);
+    var v=parseInt(el.textContent)||20;
+    v=Math.max(12,Math.min(48,v+delta));
+    el.textContent=v;
+  }
+
+  function simulateExport(){
+    var toast=document.getElementById('toast');
+    document.getElementById('toastMsg').textContent='图片已导出（PNG，模拟下载）';
+    document.getElementById('toastAction').style.display='inline-block';
+    document.getElementById('toastAction').textContent='创建新任务';
+    document.getElementById('toastAction').onclick=function(){ hideToast(); resetForm(); goTo('create'); };
+    toast.classList.add('show');
+    var pf=getSelectedCard('platformCards')||'general';
+    var st=getSelectedCard('styleCards')||'clean';
+    var sn={clean:'简约白底',lifestyle:'场景化',promo:'促销感'};
+    tasks.unshift({id:Date.now(),title:'商品主图 · '+(sn[st]||st),platform:pf,style:st,date:new Date().toLocaleString('zh-CN',{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}),status:'exported',thumbnail:'🖼️'});
+    if(tasks.length>20) tasks=tasks.slice(0,20);
+    saveTasks();
+    setTimeout(hideToast,5000);
+  }
+
+  function saveAsTemplate(){
+    var toast=document.getElementById('toast');
+    document.getElementById('toastMsg').textContent='模板已保存！可在工作台复用';
+    document.getElementById('toastAction').style.display='none';
+    toast.classList.add('show');
+    setTimeout(hideToast,3000);
+  }
+
+  function hideToast(){ document.getElementById('toast').classList.remove('show'); }
+
+  // 绑定字符计数
+  function bindCount(id,num){
+    document.getElementById(id).addEventListener('input',function(){
+      document.getElementById('count'+num).textContent=this.value.length;
+    });
+  }
+
+  // 初始化
+  loadTasks();
+  renderTasks();
+  bindCount('selling1',1);
+  bindCount('selling2',2);
+  bindCount('selling3',3);
+
+  // 暴露到 window.LD
+  window.LD={
+    goTo:goTo, startGeneration:startGeneration, cancelGeneration:cancelGeneration,
+    simulateUpload:simulateUpload, removeImage:removeImage, selectCard:selectCard,
+    checkForm:checkForm, simulateExport:simulateExport, saveAsTemplate:saveAsTemplate,
+    changeSize:changeSize, reuseTemplate:reuseTemplate, resetForm:resetForm
+  };
+})();
+</script>
+</body>
+</html>

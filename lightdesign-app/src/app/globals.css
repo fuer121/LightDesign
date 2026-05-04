@@ -1,0 +1,28 @@
+@import "tailwindcss";
+
+@theme inline {
+  /* Brand — warm amber on zinc, deliberately avoiding AI purple/blue */
+  --color-accent: #d97706;
+  --color-accent-light: #fef3c7;
+  --color-accent-hover: #b45309;
+
+  /* Surfaces */
+  --color-surface: #ffffff;
+  --color-surface-muted: #f4f4f5;
+
+  /* Typography */
+  --font-sans: var(--font-geist-sans), "Noto Sans SC", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-mono: var(--font-geist-mono), "Noto Sans SC", ui-monospace, monospace;
+}
+
+body {
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Scrollbar — subtle, not system-default garish */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #d4d4d8; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #a1a1aa; }
