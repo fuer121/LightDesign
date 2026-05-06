@@ -3,7 +3,9 @@
 **日期**：2026-05-01
 **责任角色**：ui
 **关联任务**：TASK-005
-**状态**：draft（待确认）
+**状态**：historical baseline（部分已被工程实现替代）
+
+> 2026-05-05 基线说明：本文件记录 P2 阶段低保真目标，不完全等同于当前工程实现。DEC-010 已确认当前 `lightdesign-app/` 的结果页正式采用 `/result` 会话态 + 对话式调整 + 版本管理；早期线框中的本地字号/位置微调不再作为 MVP 必做项。`/result/[taskId]` 和保存模板能力尚未实现。当前页面基线以 `docs/page-design/page-inventory.md` 和 `UI_SPEC.md` 为准。
 
 ---
 

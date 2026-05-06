@@ -8,7 +8,7 @@ import type { GenerationResult } from '@/lib/types';
 
 export default function GeneratingPage() {
   const router = useRouter();
-  const { input, previewUrl, setResult } = useGen();
+  const { input, previewUrl, setResult, uploadedFile } = useGen();
   const [progress, setProgress] = useState(0);
   const [timeLeft, setTimeLeft] = useState(30);
   const [status, setStatus] = useState<'loading' | 'done' | 'error'>('loading');
@@ -34,6 +34,7 @@ export default function GeneratingPage() {
     if (input.selling3) formData.append('selling3', input.selling3);
     formData.append('platform', input.platform);
     formData.append('style', input.style);
+    if (uploadedFile) formData.append('image', uploadedFile);
 
     fetch('/api/generate', { method: 'POST', body: formData })
       .then(async res => {

@@ -1,6 +1,213 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { AdjustInput, AdjustResult, GenerationInput, PLATFORM_SPECS, STYLE_LABELS } from '@/lib/types';
+import https from 'https';
+import { spawnSync } from 'child_process';
+import { PLATFORM_SPECS } from '@/lib/types';
+import type { AdjustInput, AdjustResult, GenerationInput } from '@/lib/types';
 
+const APIMART_BASE = 'https://api.apimart.ai/v1/';
+
+interface ApimartSubmitResponse {
+  code?: number;
+  data?: Array<{ task_id?: string }>;
+}
+
+interface ApimartTaskResult {
+  images?: Array<{ url?: string[] }>;
+}
+
+interface ApimartTaskData {
+  status?: string;
+  result?: ApimartTaskResult;
+  error?: { message?: string };
+}
+
+interface ApimartTaskResponse {
+  code?: number;
+  data?: ApimartTaskData;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
+
+function buildApimartUrl(path: string): URL {
+  return new URL(path.replace(/^\/+/, ''), APIMART_BASE);
+}
+
+function extractTaskId(body: unknown): string {
+  if (!isRecord(body)) {
+    throw new Error('GPT Image 2 提交失败: 返回格式异常');
+  }
+
+  const submitBody = body as ApimartSubmitResponse;
+  if (submitBody.code !== 200) {
+    throw new Error(`GPT Image 2 提交失败: ${JSON.stringify(body)}`);
+  }
+
+  const taskId = submitBody.data?.[0]?.task_id;
+  if (!taskId) {
+    throw new Error('未获取到 task_id');
+  }
+
+  return taskId;
+}
+
+function extractImageUrl(body: unknown): string {
+  if (!isRecord(body)) {
+    throw new Error('任务查询异常: 返回格式异常');
+  }
+
+  const taskBody = body as ApimartTaskResponse;
+  if (taskBody.code !== 200 || !taskBody.data) {
+    throw new Error(`任务查询异常: ${JSON.stringify(body)}`);
+  }
+
+  if (taskBody.data.status === 'failed') {
+    throw new Error(taskBody.data.error?.message || '图像生成任务失败');
+  }
+
+  if (taskBody.data.status !== 'completed') {
+    return '';
+  }
+
+  const imageUrl = taskBody.data.result?.images?.[0]?.url?.[0];
+  if (!imageUrl) {
+    throw new Error('任务完成但未返回图片 URL');
+  }
+
+  return imageUrl;
+}
+
+// 通用 HTTPS 请求（绕过 undici TLS 兼容问题）
+function httpsRequest(method: string, path: string, apiKey: string, body?: unknown): Promise<unknown> {
+  return new Promise((resolve, reject) => {
+    const data = body ? JSON.stringify(body) : undefined;
+    const url = buildApimartUrl(path);
+
+    const req = https.request({
+      hostname: url.hostname,
+      servername: url.hostname,
+      port: 443,
+      path: url.pathname + url.search,
+      method,
+      family: 4,
+      headers: {
+        'Host': url.hostname,
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'User-Agent': 'LightDesign/1.0',
+        ...(data ? { 'Content-Length': Buffer.byteLength(data) } : {}),
+      },
+    }, res => {
+      let raw = '';
+      res.on('data', chunk => raw += chunk);
+      res.on('end', () => {
+        try {
+          resolve(JSON.parse(raw));
+        } catch {
+          reject(new Error(`API 返回非 JSON 响应: ${raw.slice(0, 200)}`));
+        }
+      });
+    });
+
+    req.on('error', reject);
+    req.setTimeout(30000, () => { req.destroy(); reject(new Error('请求超时')); });
+
+    if (data) req.write(data);
+    req.end();
+  });
+}
+
+// curl 回退 — macOS Node.js 有时 TLS/CDN 路由异常
+function curlRequest(method: string, path: string, apiKey: string, body?: unknown): unknown {
+  const url = buildApimartUrl(path);
+  const data = body ? JSON.stringify(body) : undefined;
+
+  const args = [
+    '-sS', '-X', method,
+    '-H', `Authorization: Bearer ${apiKey}`,
+    '-H', 'Content-Type: application/json',
+    '-H', 'Accept: application/json',
+    '--connect-timeout', '15',
+    '--max-time', '45',
+  ];
+
+  if (data) {
+    args.push('--data-binary', '@-');
+  }
+
+  args.push(url.toString());
+
+  const result = spawnSync('curl', args, {
+    encoding: 'utf-8',
+    input: data,
+    timeout: 35000,
+    maxBuffer: 10 * 1024 * 1024,
+  });
+  if (result.error) {
+    throw result.error;
+  }
+  if (result.status !== 0) {
+    throw new Error(`curl 请求失败: ${result.stderr.slice(0, 200)}`);
+  }
+
+  try {
+    return JSON.parse(result.stdout);
+  } catch {
+    throw new Error(`curl 返回非 JSON 响应: ${result.stdout.slice(0, 200)}`);
+  }
+}
+
+// 智能请求 — 先 https.request，失败回退 curl
+async function smartRequest(method: string, path: string, apiKey: string, body?: unknown): Promise<unknown> {
+  try {
+    return await httpsRequest(method, path, apiKey, body);
+  } catch (e) {
+    const message = e instanceof Error ? e.message : '未知错误';
+    console.warn(`https.request 失败，尝试 curl 回退: ${message}`);
+    return curlRequest(method, path, apiKey, body);
+  }
+}
+
+// 异步轮询 GPT Image 2 任务直到完成
+async function pollTask(taskId: string, apiKey: string, maxWaitMs = 90000): Promise<string> {
+  const startTime = Date.now();
+  await new Promise(r => setTimeout(r, 10000));
+
+  while (Date.now() - startTime < maxWaitMs) {
+    const body = await smartRequest('GET', `/tasks/${taskId}`, apiKey);
+    const imageUrl = extractImageUrl(body);
+
+    if (imageUrl) {
+      return imageUrl;
+    }
+
+    await new Promise(r => setTimeout(r, 3000));
+  }
+
+  throw new Error('图像生成超时，请稍后重试');
+}
+
+// 平台 → API 尺寸映射
+function platformToSize(platform: string): { size: string; resolution: string } {
+  const resolution = process.env.APIMART_RESOLUTION || '1k';
+
+  switch (platform) {
+    case 'amazon':
+      return { size: '1:1', resolution: resolution === '1k' ? '1k' : '2k' };
+    case 'taobao':
+      return { size: '1:1', resolution: '1k' };
+    case 'shopee':
+      return { size: '1:1', resolution: '1k' };
+    case 'general':
+      return { size: '1:1', resolution: resolution === '1k' ? '1k' : '2k' };
+    default:
+      return { size: '1:1', resolution: '1k' };
+  }
+}
+
+// 构建基础 prompt
 function buildBasePrompt(input: GenerationInput): string {
   const spec = PLATFORM_SPECS[input.platform];
   const sellingLines = [input.selling1, input.selling2];
@@ -16,9 +223,8 @@ function buildBasePrompt(input: GenerationInput): string {
   return `一张${spec.width}x${spec.height}px的电商产品主图，${styleDesc[input.style] || input.style}。画面需包含文案: ${text}。要求: 商品主体清晰居中、文字可读醒目、构图符合${spec.label}平台主图规范、无未授权品牌标识。`;
 }
 
+// 自然语言 → prompt 修改
 function interpretInstruction(instruction: string): string {
-  // 把自然语言指令转换为 prompt 修改片段
-  // 生产环境可以调 GPT-4o-mini 做更精准的 prompt 改写
   const lower = instruction.toLowerCase();
 
   if (lower.includes('背景') || lower.includes('底色')) {
@@ -53,30 +259,31 @@ function interpretInstruction(instruction: string): string {
   if (lower.includes('对比') || lower.includes('contrast')) return '增强画面色彩对比度';
   if (lower.includes('亮') || lower.includes('bright')) return '整体提亮画面，增加亮度';
   if (lower.includes('暗') || lower.includes('暗调')) return '画面调暗，呈现高级暗调效果';
-
   if (lower.includes('阴影') || lower.includes('shadow')) return '为商品添加柔和投影效果';
   if (lower.includes('光') || lower.includes('lighting')) return '增强商品光照效果，呈现更立体质感';
   if (lower.includes('简约') || lower.includes('简单') || lower.includes('简洁')) return '简化画面，去除多余元素，极简风格';
   if (lower.includes('热闹') || lower.includes('丰富')) return '增加视觉丰富度，添加促销元素和装饰';
 
-  // 默认：直接把指令附加到 prompt
   return `根据要求调整: ${instruction}`;
 }
 
-function buildUpdatedPrompt(baseInput: GenerationInput, history: { role: string; content: string }[], newInstruction: string): string {
+// 构建更新后的 prompt（含历史）
+function buildUpdatedPrompt(
+  baseInput: GenerationInput,
+  history: { role: string; content: string }[],
+  newInstruction: string,
+): string {
   const base = buildBasePrompt(baseInput);
 
-  // 从历史中提取所有用户调整指令
-  const adjustmentParts: string[] = [];
+  const adjustments: string[] = [];
   for (const msg of history) {
     if (msg.role === 'user') {
-      adjustmentParts.push(interpretInstruction(msg.content));
+      adjustments.push(interpretInstruction(msg.content));
     }
   }
-  adjustmentParts.push(interpretInstruction(newInstruction));
+  adjustments.push(interpretInstruction(newInstruction));
 
-  // 去重
-  const unique = [...new Set(adjustmentParts)];
+  const unique = [...new Set(adjustments)];
 
   return `${base}
 
@@ -86,7 +293,40 @@ ${unique.map((a, i) => `${i + 1}. ${a}`).join('\n')}
 请重新生成产品主图，综合所有上述要求。保持商品主体一致性，仅调整指定的方面。`;
 }
 
-// Mock 生成（无 API key 时）
+// GPT Image 2 图生图调用
+async function gptImage2Adjust(
+  prompt: string,
+  referenceImageUrl: string,
+  platform: string,
+): Promise<string> {
+  const apiKey = process.env.APIMART_API_KEY;
+  const trimmedApiKey = apiKey?.trim();
+  if (!trimmedApiKey) throw new Error('APIMART_API_KEY 未配置');
+
+  const { size, resolution } = platformToSize(platform);
+
+  const reqBody: Record<string, unknown> = {
+    model: 'gpt-image-2',
+    prompt,
+    n: 1,
+    size,
+    resolution,
+  };
+
+  // 传入参考图走图生图模式（SVG data URL 除外）
+  if (referenceImageUrl && !referenceImageUrl.startsWith('data:image/svg+xml')) {
+    reqBody.image_urls = [referenceImageUrl];
+  }
+
+  // 1. 提交
+  const submitBody = await smartRequest('POST', '/images/generations', trimmedApiKey, reqBody);
+  const taskId = extractTaskId(submitBody);
+
+  // 2. 轮询
+  return await pollTask(taskId, trimmedApiKey);
+}
+
+// Mock 回退（无 API key 时）
 function mockGenerate(input: GenerationInput, version: number): { imageUrl: string; prompt: string } {
   const spec = PLATFORM_SPECS[input.platform];
   const sellingLines = [input.selling1, input.selling2];
@@ -109,7 +349,7 @@ function mockGenerate(input: GenerationInput, version: number): { imageUrl: stri
   <rect width="${spec.width}" height="${spec.height}" fill="${bg}"/>
   <rect x="${spec.width * 0.1}" y="${spec.height * 0.08}" width="${spec.width * 0.8}" height="${spec.height * 0.55}" rx="16" fill="#fff" opacity="0.85"/>
   <text x="${spec.width / 2}" y="${spec.height * 0.35}" text-anchor="middle" font-size="48" fill="#d97706" font-family="sans-serif">[商品]</text>
-  <text x="${spec.width / 2}" y="${spec.height * 0.45}" text-anchor="middle" font-size="20" fill="#86868b" font-family="sans-serif">商品主图 v${version + 1}</text>
+  <text x="${spec.width / 2}" y="${spec.height * 0.45}" text-anchor="middle" font-size="20" fill="#86868b" font-family="sans-serif">商品主图 v${version + 1} (Mock)</text>
   ${textLines}
   ${dots}
   <rect x="${spec.width * 0.72}" y="${spec.height * 0.06}" width="${spec.width * 0.2}" height="42" rx="8" fill="#dc2626"/>
@@ -121,30 +361,6 @@ function mockGenerate(input: GenerationInput, version: number): { imageUrl: stri
     imageUrl: `data:image/svg+xml;base64,${b64}`,
     prompt: buildBasePrompt(input),
   };
-}
-
-async function dalleGenerate(prompt: string, platform: string): Promise<string> {
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) throw new Error('OPENAI_API_KEY 未配置');
-
-  const size = '1024x1024'; // DALL-E 3 固定尺寸，前端可缩放
-
-  const res = await fetch('https://api.openai.com/v1/images/generations', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({ model: 'dall-e-3', prompt, n: 1, size, quality: 'standard' }),
-  });
-
-  if (!res.ok) {
-    const err = await res.text();
-    throw new Error(`DALL-E API 错误: ${res.status} ${err}`);
-  }
-
-  const data = await res.json();
-  return data.data[0].url;
 }
 
 export async function POST(request: NextRequest) {
@@ -160,17 +376,28 @@ export async function POST(request: NextRequest) {
 
     let imageUrl: string;
 
-    if (process.env.OPENAI_API_KEY) {
+    if (process.env.APIMART_API_KEY) {
       try {
-        imageUrl = await dalleGenerate(updatedPrompt, body.baseInput.platform);
+        imageUrl = await gptImage2Adjust(
+          updatedPrompt,
+          body.imageUrl,
+          body.baseInput.platform,
+        );
       } catch (e) {
-        console.error('DALL-E 调用失败，回退 mock:', e);
-        const mock = mockGenerate(body.baseInput, body.history.filter(m => m.role === 'user').length);
+        const message = e instanceof Error ? e.message : '未知错误';
+        console.error(`GPT Image 2 调整失败，回退 mock: ${message}`);
+        const mock = mockGenerate(
+          body.baseInput,
+          body.history.filter(m => m.role === 'user').length + 1,
+        );
         imageUrl = mock.imageUrl;
       }
     } else {
       await new Promise(r => setTimeout(r, 1800));
-      const mock = mockGenerate(body.baseInput, body.history.filter(m => m.role === 'user').length + 1);
+      const mock = mockGenerate(
+        body.baseInput,
+        body.history.filter(m => m.role === 'user').length + 1,
+      );
       imageUrl = mock.imageUrl;
     }
 

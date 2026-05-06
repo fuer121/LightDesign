@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useGen } from '@/components/GenContext';
@@ -28,30 +28,138 @@ const STYLE_LABELS: Record<string, string> = {
   clean: '简约白底', lifestyle: '场景化', promo: '促销感',
 };
 
+const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
+const COMPRESS_THRESHOLD_BYTES = 2 * 1024 * 1024;
+const MAX_IMAGE_EDGE = 1024;
+const JPEG_QUALITY = 0.85;
+
+type ImageDimensions = {
+  width: number;
+  height: number;
+};
+
+function loadImageDimensions(file: File): Promise<ImageDimensions> {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const image = new Image();
+
+    image.onload = () => {
+      URL.revokeObjectURL(url);
+      resolve({ width: image.naturalWidth || image.width, height: image.naturalHeight || image.height });
+    };
+    image.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error('图片读取失败'));
+    };
+    image.src = url;
+  });
+}
+
+function canvasToBlob(canvas: HTMLCanvasElement, type: string): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    canvas.toBlob(
+      (blob) => {
+        if (!blob) {
+          reject(new Error('图片压缩失败'));
+          return;
+        }
+        resolve(blob);
+      },
+      type,
+      type === 'image/jpeg' ? JPEG_QUALITY : undefined,
+    );
+  });
+}
+
+async function downsampleImage(file: File, dimensions: ImageDimensions): Promise<File> {
+  const scale = Math.min(1, MAX_IMAGE_EDGE / Math.max(dimensions.width, dimensions.height));
+  const targetWidth = Math.max(1, Math.round(dimensions.width * scale));
+  const targetHeight = Math.max(1, Math.round(dimensions.height * scale));
+  const url = URL.createObjectURL(file);
+  const image = new Image();
+
+  try {
+    await new Promise<void>((resolve, reject) => {
+      image.onload = () => resolve();
+      image.onerror = () => reject(new Error('图片读取失败'));
+      image.src = url;
+    });
+
+    const canvas = document.createElement('canvas');
+    canvas.width = targetWidth;
+    canvas.height = targetHeight;
+
+    const context = canvas.getContext('2d');
+    if (!context) throw new Error('当前浏览器不支持图片压缩');
+
+    context.drawImage(image, 0, 0, targetWidth, targetHeight);
+    const blob = await canvasToBlob(canvas, file.type);
+
+    return new File([blob], file.name, {
+      type: file.type,
+      lastModified: file.lastModified,
+    });
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
+async function prepareImageFile(file: File): Promise<File> {
+  const dimensions = await loadImageDimensions(file);
+  const longEdge = Math.max(dimensions.width, dimensions.height);
+  const shouldDownsample = file.size > COMPRESS_THRESHOLD_BYTES || longEdge > MAX_IMAGE_EDGE;
+
+  if (!shouldDownsample) return file;
+
+  return downsampleImage(file, dimensions);
+}
+
+function getReusePreferences(): Pick<GenerationInput, 'platform' | 'style'> | null {
+  if (typeof window === 'undefined') return null;
+
+  try {
+    const reuse = localStorage.getItem('lightdesign_reuse');
+    if (!reuse) return null;
+
+    const parsed = JSON.parse(reuse) as Partial<Pick<GenerationInput, 'platform' | 'style'>>;
+    localStorage.removeItem('lightdesign_reuse');
+
+    if (!parsed.platform || !parsed.style) return null;
+    return {
+      platform: parsed.platform,
+      style: parsed.style,
+    };
+  } catch {
+    return null;
+  }
+}
+
 export default function CreatePage() {
   const router = useRouter();
   const { setInput, setUploadedFile, setPreviewUrl, previewUrl } = useGen();
   const fileRef = useRef<HTMLInputElement>(null);
+  const [reusePreferences] = useState(() => getReusePreferences());
 
   const [selling1, setSelling1] = useState('');
   const [selling2, setSelling2] = useState('');
   const [selling3, setSelling3] = useState('');
-  const [platform, setPlatform] = useState<GenerationInput['platform'] | null>(null);
-  const [style, setStyle] = useState<GenerationInput['style'] | null>(null);
+  const [platform, setPlatform] = useState<GenerationInput['platform'] | null>(reusePreferences?.platform ?? null);
+  const [style, setStyle] = useState<GenerationInput['style'] | null>(reusePreferences?.style ?? null);
   const [submitting, setSubmitting] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
-  useEffect(() => {
+  const handleFile = async (file: File) => {
+    setUploadError(null);
+    if (!file.type.match(/image\/(jpeg|png)/)) { setUploadError('仅支持 JPG 和 PNG 格式'); return; }
+    if (file.size > MAX_UPLOAD_BYTES) { setUploadError('文件大小不能超过 10MB'); return; }
+
     try {
-      const reuse = localStorage.getItem('lightdesign_reuse');
-      if (reuse) { const d = JSON.parse(reuse); if (d.platform) setPlatform(d.platform); if (d.style) setStyle(d.style); localStorage.removeItem('lightdesign_reuse'); }
-    } catch {}
-  }, []);
-
-  const handleFile = (file: File) => {
-    if (!file.type.match(/image\/(jpeg|png)/)) { alert('仅支持 JPG 和 PNG 格式'); return; }
-    if (file.size > 10 * 1024 * 1024) { alert('文件大小不能超过 10MB'); return; }
-    setUploadedFile(file);
-    setPreviewUrl(URL.createObjectURL(file));
+      const preparedFile = await prepareImageFile(file);
+      setUploadedFile(preparedFile);
+      setPreviewUrl(URL.createObjectURL(preparedFile));
+    } catch {
+      setUploadError('图片处理失败，请更换图片后重试');
+    }
   };
 
   const canSubmit = selling1.trim() && selling2.trim() && previewUrl && platform && style && !submitting;
@@ -101,6 +209,7 @@ export default function CreatePage() {
               <input ref={fileRef} type="file" accept="image/jpeg,image/png" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) handleFile(f); }} />
             </div>
           )}
+          {uploadError ? <p className="mt-3 text-sm font-medium text-red-500">{uploadError}</p> : null}
         </section>
 
         {/* 2. Selling points */}

@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { useGen } from '@/components/GenContext';
 import {
   PaperPlaneTilt, DownloadSimple, Plus,
-  CaretLeft, CaretRight, ArrowLeft, ChatCenteredText,
+  CaretLeft, CaretRight, ArrowLeft, ChatCenteredText, Image as ImageIcon,
 } from '@phosphor-icons/react';
 import type { ChatMessage, ImageVersion, AdjustResult } from '@/lib/types';
 import { PLATFORM_SPECS, STYLE_LABELS } from '@/lib/types';
@@ -34,22 +34,25 @@ export default function ResultPage() {
     const v0: ImageVersion = {
       id: 'v0',
       imageUrl: result.imageUrl,
-      prompt: (result as any).prompt || '',
+      prompt: result.prompt || '',
       instruction: '初始生成',
       createdAt: result.generatedAt,
     };
-    setVersions([v0]);
-    setCurrentVersion(0);
+    const frame = window.requestAnimationFrame(() => {
+      setVersions([v0]);
+      setCurrentVersion(0);
+      setMessages([
+        {
+          id: uid(),
+          role: 'assistant',
+          content: `已根据你的商品信息和"${STYLE_LABELS[result.style] || result.style}"风格生成了${PLATFORM_SPECS[result.platform]?.label || result.platform}平台主图。你可以用自然语言告诉我如何调整，比如"把背景换成蓝色"、"文字放大一些"、"商品往左移"。`,
+          timestamp: new Date().toISOString(),
+          imageUrl: result.imageUrl,
+        },
+      ]);
+    });
 
-    setMessages([
-      {
-        id: uid(),
-        role: 'assistant',
-        content: `已根据你的商品信息和"${STYLE_LABELS[result.style] || result.style}"风格生成了${PLATFORM_SPECS[result.platform]?.label || result.platform}平台主图。你可以用自然语言告诉我如何调整，比如"把背景换成蓝色"、"文字放大一些"、"商品往左移"。`,
-        timestamp: new Date().toISOString(),
-        imageUrl: result.imageUrl,
-      },
-    ]);
+    return () => window.cancelAnimationFrame(frame);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // 自动滚动
@@ -126,10 +129,10 @@ export default function ResultPage() {
         imageUrl: data.imageUrl,
       };
       setMessages(prev => [...prev, assistantMsg]);
-    } catch (e: any) {
+    } catch (e: unknown) {
       const errMsg: ChatMessage = {
         id: uid(), role: 'assistant',
-        content: `抱歉，调整失败: ${e.message || '未知错误'}。请重试。`,
+        content: `抱歉，调整失败: ${e instanceof Error ? e.message : '未知错误'}。请重试。`,
         timestamp: new Date().toISOString(),
       };
       setMessages(prev => [...prev, errMsg]);
@@ -175,8 +178,17 @@ export default function ResultPage() {
     }
   };
 
-  const activeImage = versions[currentVersion]?.imageUrl || result?.imageUrl || '';
+  const activeImage = versions[currentVersion]?.imageUrl || result?.imageUrl || null;
   const spec = result ? PLATFORM_SPECS[result.platform] : null;
+
+  // 无数据时等待重定向，不渲染
+  if (!result || !input) {
+    return (
+      <div className="flex h-[calc(100dvh-56px)] items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-[3px] border-amber-200 border-t-amber-500" />
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-[calc(100dvh-56px)]">
@@ -184,11 +196,17 @@ export default function ResultPage() {
       <div className="flex flex-1 flex-col items-center justify-center bg-zinc-100 p-6">
         {/* 图片 */}
         <div className="relative flex max-h-full max-w-full items-center justify-center">
-          <img
-            src={activeImage}
-            alt="产品主图"
-            className="max-h-[70dvh] max-w-full rounded-2xl object-contain shadow-2xl"
-          />
+          {activeImage ? (
+            <img
+              src={activeImage}
+              alt="产品主图"
+              className="max-h-[70dvh] max-w-full rounded-2xl object-contain shadow-2xl"
+            />
+          ) : (
+            <div className="flex h-80 w-80 items-center justify-center rounded-2xl bg-zinc-200">
+              <ImageIcon size={48} weight="duotone" className="text-zinc-400" />
+            </div>
+          )}
           {/* Loading overlay */}
           {loading && (
             <div className="absolute inset-0 flex items-center justify-center rounded-2xl bg-black/20 backdrop-blur-sm">

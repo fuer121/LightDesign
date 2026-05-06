@@ -37,4 +37,4 @@ fi
 echo ""
 echo "[启动] 开发服务器 → http://localhost:$PORT"
 echo ""
-npm run dev -- --port $PORT
+TURBOPACK_ROOT="$PROJECT_DIR" npm run dev -- --port $PORT

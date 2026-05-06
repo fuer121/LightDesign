@@ -18,7 +18,14 @@ export default function DashboardPage() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loaded, setLoaded] = useState(false);
 
-  useEffect(() => { setTasks(loadTasks()); setLoaded(true); }, []);
+  useEffect(() => {
+    const frame = window.requestAnimationFrame(() => {
+      setTasks(loadTasks());
+      setLoaded(true);
+    });
+
+    return () => window.cancelAnimationFrame(frame);
+  }, []);
 
   const isEmpty = loaded && tasks.length === 0;
 
