@@ -47,7 +47,7 @@ test('completes the mocked create to export flow and shows the recent task on th
     status: 'exported',
   });
 
-  await page.goto('/');
+  await page.goto('/dashboard');
   await expect(page.getByText('商品主图 · 简约白底')).toBeVisible();
   await expect(page.getByText(/亚马逊 · 简约白底/)).toBeVisible();
   await expect(page.getByText('已导出')).toBeVisible();

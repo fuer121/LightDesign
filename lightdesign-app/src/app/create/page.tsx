@@ -172,24 +172,24 @@ export default function CreatePage() {
   };
 
   return (
-    <div className="mx-auto max-w-2xl px-6 py-12">
+    <div className="mx-auto max-w-3xl px-6 pb-16 pt-12">
       {/* Back + Title */}
-      <Link href="/" className="mb-8 inline-flex items-center gap-1.5 text-sm font-medium text-zinc-400 transition hover:text-zinc-600">
+      <Link href="/dashboard" className="mb-8 inline-flex items-center gap-1.5 text-sm font-medium text-zinc-500 transition hover:-translate-x-0.5 hover:text-zinc-700 focus-visible:outline-none">
         <ArrowLeft size={14} weight="bold" /> 返回工作台
       </Link>
-      <h1 className="mb-10 text-2xl font-semibold tracking-tight text-zinc-900">新建生成任务</h1>
+      <h1 className="mb-10 text-2xl font-semibold tracking-tight text-zinc-900 text-balance">新建生成任务</h1>
 
       {/* ====== Grid Form ====== */}
-      <div className="space-y-10">
+      <div className="space-y-10 rounded-3xl border border-zinc-200/70 bg-white p-8 shadow-[0_24px_52px_-40px_rgba(24,24,27,0.45)]">
         {/* 1. Upload */}
-        <section>
+        <section className="surface-grain rounded-2xl bg-zinc-50/65 p-5">
           <label className="mb-2.5 block text-sm font-semibold text-zinc-700">商品照片</label>
           {previewUrl ? (
             <div className="relative inline-block">
-              <img src={previewUrl} alt="" className="max-h-52 rounded-2xl border border-zinc-200" />
+              <img src={previewUrl} alt="已上传的商品照片预览" className="max-h-52 rounded-2xl border border-zinc-200" />
               <button
                 onClick={() => { setPreviewUrl(null); setUploadedFile(null); }}
-                className="absolute -top-2 -right-2 flex h-6 w-6 items-center justify-center rounded-full bg-zinc-800 text-white transition hover:bg-zinc-900 active:scale-90"
+                className="absolute -top-2 -right-2 flex h-6 w-6 items-center justify-center rounded-full bg-zinc-800 text-white transition hover:bg-zinc-900 focus-visible:outline-none active:scale-90"
               >
                 <X size={12} weight="bold" />
               </button>
@@ -199,7 +199,7 @@ export default function CreatePage() {
               onClick={() => fileRef.current?.click()}
               onDragOver={e => e.preventDefault()}
               onDrop={e => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) handleFile(f); }}
-              className="cursor-pointer rounded-2xl border-2 border-dashed border-zinc-300 bg-zinc-50/80 px-8 py-14 text-center transition hover:border-amber-300 hover:bg-amber-50/50"
+              className="cursor-pointer rounded-2xl border-2 border-dashed border-zinc-300 bg-zinc-50/80 px-8 py-14 text-center transition hover:-translate-y-0.5 hover:border-amber-400 hover:bg-amber-50/50"
             >
               <div className="mb-3 inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-zinc-100">
                 <ImageIcon size={26} weight="duotone" className="text-zinc-400" />
@@ -213,7 +213,7 @@ export default function CreatePage() {
         </section>
 
         {/* 2. Selling points */}
-        <section>
+        <section className="surface-grain rounded-2xl bg-zinc-50/65 p-5">
           <label className="mb-2.5 block text-sm font-semibold text-zinc-700">卖点文案</label>
           <p className="mb-3 text-xs text-zinc-400">每条最多 15 个字</p>
           <div className="grid gap-3">
@@ -224,7 +224,7 @@ export default function CreatePage() {
             ].map((f, i) => (
               <div key={i}>
                 <input
-                  className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-amber-400 focus:ring-2 focus:ring-amber-100 placeholder:text-zinc-300"
+                  className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-700 outline-none transition placeholder:text-zinc-400 focus:border-amber-500 focus:ring-2 focus:ring-amber-100"
                   value={f.value}
                   maxLength={15}
                   placeholder={f.placeholder}
@@ -237,7 +237,7 @@ export default function CreatePage() {
         </section>
 
         {/* 3. Platform */}
-        <section>
+        <section className="surface-grain rounded-2xl bg-zinc-50/65 p-5">
           <label className="mb-2.5 block text-sm font-semibold text-zinc-700">目标平台</label>
           <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
             {Object.entries(PLATFORM_SPECS).map(([k, v]) => (
@@ -246,8 +246,8 @@ export default function CreatePage() {
                 onClick={() => setPlatform(k as GenerationInput['platform'])}
                 className={`flex flex-col items-center gap-2 rounded-2xl border-2 px-3 py-5 transition active:scale-[0.98] ${
                   platform === k
-                    ? 'border-amber-400 bg-amber-50 text-amber-600 shadow-[0_0_0_3px_rgba(217,119,6,.12)]'
-                    : 'border-zinc-200 bg-white text-zinc-500 hover:border-zinc-300 hover:bg-zinc-50'
+                    ? 'border-amber-500 bg-amber-50 text-amber-700 shadow-[0_0_0_3px_rgba(217,119,6,.14)]'
+                    : 'border-zinc-200 bg-white text-zinc-500 hover:-translate-y-0.5 hover:border-zinc-300 hover:bg-zinc-50'
                 }`}
               >
                 {PLATFORM_ICONS[k]}
@@ -258,7 +258,7 @@ export default function CreatePage() {
         </section>
 
         {/* 4. Style */}
-        <section>
+        <section className="surface-grain rounded-2xl bg-zinc-50/65 p-5">
           <label className="mb-2.5 block text-sm font-semibold text-zinc-700">风格方向</label>
           <div className="grid grid-cols-3 gap-2.5">
             {(['clean', 'lifestyle', 'promo'] as const).map(k => (
@@ -267,8 +267,8 @@ export default function CreatePage() {
                 onClick={() => setStyle(k)}
                 className={`flex flex-col items-center gap-2 rounded-2xl border-2 px-3 py-5 transition active:scale-[0.98] ${
                   style === k
-                    ? 'border-amber-400 bg-amber-50 text-amber-600 shadow-[0_0_0_3px_rgba(217,119,6,.12)]'
-                    : 'border-zinc-200 bg-white text-zinc-500 hover:border-zinc-300 hover:bg-zinc-50'
+                    ? 'border-amber-500 bg-amber-50 text-amber-700 shadow-[0_0_0_3px_rgba(217,119,6,.14)]'
+                    : 'border-zinc-200 bg-white text-zinc-500 hover:-translate-y-0.5 hover:border-zinc-300 hover:bg-zinc-50'
                 }`}
               >
                 {STYLE_ICONS[k]}
@@ -280,20 +280,20 @@ export default function CreatePage() {
       </div>
 
       {/* Actions */}
-      <div className="mt-12 flex gap-3 border-t border-zinc-200 pt-8">
+      <div className="mt-10 flex flex-wrap gap-3 border-t border-zinc-200 pt-8">
         <button
           onClick={handleSubmit}
           disabled={!canSubmit}
-          className={`inline-flex items-center gap-2 rounded-xl px-7 py-3 text-sm font-semibold transition active:scale-[0.98] ${
+          className={`inline-flex items-center gap-2 rounded-xl px-7 py-3 text-sm font-semibold transition focus-visible:outline-none active:scale-[0.98] ${
             canSubmit
-              ? 'bg-amber-500 text-white shadow-sm shadow-amber-200 hover:bg-amber-600'
+              ? 'bg-amber-600 text-white shadow-sm shadow-amber-200 hover:-translate-y-0.5 hover:bg-amber-700'
               : 'cursor-not-allowed bg-zinc-100 text-zinc-300'
           }`}
         >
           <Lightning size={16} weight="fill" />
           {submitting ? '生成中...' : '生成产品主图'}
         </button>
-        <Link href="/" className="inline-flex items-center gap-2 rounded-xl bg-zinc-100 px-6 py-3 text-sm font-medium text-zinc-600 transition hover:bg-zinc-200 active:scale-[0.98]">
+        <Link href="/dashboard" className="inline-flex items-center gap-2 rounded-xl bg-zinc-100 px-6 py-3 text-sm font-medium text-zinc-600 transition hover:bg-zinc-200 focus-visible:outline-none active:scale-[0.98]">
           取消
         </Link>
       </div>

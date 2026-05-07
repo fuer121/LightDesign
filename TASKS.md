@@ -1,7 +1,7 @@
 # TASKS.md
 
 ## 0. 文档状态
-- 更新时间：2026-05-06
+- 更新时间：2026-05-07
 - 责任角色：orchestrator
 - 阶段：工程 MVP 验证
 
@@ -48,6 +48,8 @@
 | TASK-018 | 工程遗留风险处理建议 | engineer-* / security-reviewer | done | P1 | TASK-009 | 遗留风险评估报告 |
 | TASK-019 | 真实商品图扩样本与对话式调整验证方案 | test / product | done | P1 | TASK-016 | 扩样本测试矩阵与 checkpoint 建议 |
 | TASK-020 | 上传前图片压缩 / 降采样实现 | engineer-* | done | P1 | TASK-016 / TASK-019 | create/page.tsx + create/page.test.tsx |
+| TASK-021 | 现有网站 UI 高级化重设计派单 | ui / engineer-* | done | P1 | TASK-020 | 页面视觉与交互优化实现 + 验收记录 |
+| TASK-022 | 高级官网首页与全站视觉统一 | ui / engineer-* | done | P1 | TASK-021 | 新官网首页 + /dashboard 迁移 + 本地 showcase 资产 + 验证记录 |
 
 ---
 
@@ -289,6 +291,36 @@
 - next_step：用户验收后可作为 TASK-019 扩样本验证前置条件。
 - eta：已验收。
 
+### TASK-021：现有网站 UI 高级化重设计派单
+- owner_role：ui / engineer-*
+- status：done
+- 背景：当前功能链路已完成 MVP 验收，但页面视觉质感、排版层级和交互状态仍有“模板化”特征。
+- 目标：基于 `redesign-existing-projects` 技能对现有网站做高质量 UI 升级，在不破坏功能前提下提升品牌感与可用性。
+- 范围内：保留现有 Next.js + Tailwind 体系；优化首页、创建页、结果页的排版、色彩层级、背景深度、按钮状态、可访问性细节。
+- 范围外：重写业务逻辑、迁移技术栈、修改 API 契约、引入无必要大型依赖。
+- 输入：`lightdesign-app/src/app/*.tsx`、`lightdesign-app/src/app/globals.css`、现有交互流与验收口径。
+- 输出：UI 升级代码变更、验证结果、设计诊断与修复说明。
+- 验收标准：功能不回归；视觉层级显著改善；交互态（hover/active/focus）完整；桌面/移动可用。
+- 风险：样式改动涉及多页，需重点防止可点击区域、文字可读性和状态逻辑回归。
+- decision_needed：无。
+- next_step：进入后续体验验收与 PR 补充说明同步。
+- eta：已完成。
+
+### TASK-022：高级官网首页与全站视觉统一
+- owner_role：ui / engineer-*
+- status：done
+- 背景：用户已接受“对话式调整”作为结果页正式方向，并要求将 `/` 从工作台升级为高级感官网首页，强化品牌展示、效果证明和开始创作入口。
+- 目标：实现 Pristine Light Mode + Quiet Premium Neutral 风格官网首页，原工作台迁移到 `/dashboard`，并保持创建、生成、结果页视觉语言一致。
+- 范围内：`/` 6 分区首页；Header Logo / 工作台 / 开始创作路由调整；本地 showcase 静态资源；`/dashboard` 工作台迁移；创建页与结果页返回工作台路径更新；单测与 E2E 路由断言更新。
+- 范围外：新增运行时外部图片请求；新增依赖；`/result/[taskId]` 深链；修改 API、context、生成或调整业务逻辑。
+- 输入：用户提供的 TASK-022 方案、4 张真实商品图、本轮 TASK-021 UI 基线。
+- 输出：`lightdesign-app/src/app/page.tsx`、`lightdesign-app/src/app/dashboard/page.tsx`、`lightdesign-app/public/showcase/*`、Header / create / result / test / e2e 更新、PR 草案更新。
+- 验收标准：首页 3 秒内表达“高质量电商图生成网站”；桌面和移动端“开始创作”显眼且可点击；showcase 至少 4 类商品图并可横向滚动；原工作台可在 `/dashboard` 使用；生成、调整、导出流程不回归。
+- 风险：大幅首页视觉改造需重点验证移动端 fixed CTA 是否遮挡内容；直接访问 `/result` 仍是会话态限制。
+- decision_needed：无，用户已明确批准执行该方案。
+- next_step：执行 unit / e2e / lint / build 与浏览器桌面、移动走查；作为 PR #1 follow-up commit 推送。
+- eta：已完成。
+
 ### CP-016：真实商品图采样评估 checkpoint
 - task_id：TASK-016
 - owner_role：test / product
@@ -348,6 +380,30 @@
 - next_step：后续 TASK-019 扩样本应基于该上传压缩链路执行。
 - eta：已验收。
 - orchestrator 裁决：通过并完成。
+
+### CP-021：UI 重设计派单 checkpoint
+- task_id：TASK-021
+- owner_role：ui / engineer-*
+- status：done
+- progress：已完成 Scan -> Diagnose -> Fix。工作台/创建页/生成页/结果页完成 UI 升级；统一交互态、增强表面层次、补充可访问性 alt 文本、保持现有业务链路不变。
+- deliverables：`lightdesign-app/src/app/globals.css`、`lightdesign-app/src/app/page.tsx`、`lightdesign-app/src/app/create/page.tsx`、`lightdesign-app/src/app/generating/page.tsx`、`lightdesign-app/src/app/result/page.tsx`
+- risks：样式层改动覆盖范围较大，需防止功能和可读性回归。
+- decision_needed：无。
+- next_step：进入视觉走查与用户体验确认；按需再拆分微调任务。
+- eta：已完成。
+- orchestrator 裁决：通过并完成。
+
+### CP-022：高级官网首页与全站视觉统一 checkpoint
+- task_id：TASK-022
+- owner_role：orchestrator / ui / engineer-*
+- status：done
+- progress：已按 6 个 section 参考方向实现官网首页：Hero、Showcase、Workflow、Quality proof、Use cases、Final CTA；原工作台迁移至 `/dashboard`；Header 增加工作台入口与开始创作 CTA；功能页保留原业务逻辑，仅同步路由与视觉语义。
+- deliverables：`lightdesign-app/src/app/page.tsx`、`lightdesign-app/src/app/dashboard/page.tsx`、`lightdesign-app/public/showcase/icecream.png`、`lightdesign-app/public/showcase/sneakers.png`、`lightdesign-app/public/showcase/keyboard.png`、`lightdesign-app/public/showcase/backpack.png`、相关测试与 PR 草案更新。
+- risks：`/result` 仍依赖当前会话态，刷新或直访恢复能力不在本任务范围；本地商品图资产增加仓库体积约 3.4MB。
+- decision_needed：无。
+- next_step：完成自动化验证与浏览器走查后推送 follow-up commit 到现有 PR。
+- eta：已完成。
+- orchestrator 裁决：通过并进入 PR follow-up 交付。
 
 ---
 

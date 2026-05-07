@@ -1,6 +1,6 @@
 # TASK-017 PR 交付材料草案
 
-- 更新时间：2026-05-06
+- 更新时间：2026-05-07
 - 责任角色：orchestrator / writer
 - 关联任务：TASK-017
 - 基于材料：当前 git diff、`docs/testing-validation/mvp-validation-report.md`、`docs/testing-validation/task-014-apimart-img2img-validation.md`、`docs/testing-validation/task-016-quality-cost-stability.md`、`docs/testing-validation/task-019-real-sampling-report.md`、`TASKS.md`、`DECISIONS.md`
@@ -14,6 +14,7 @@
 - 上传前图片降采样能力已落地（长边 1024，JPEG 0.85，PNG 保持 PNG），用于降低大图 payload 导致的真实调用风险。
 - 新增最小自动化测试基线与浏览器冒烟测试，补齐 API、页面和工作台历史的可重复验证能力。
 - 已完成真实商品图扩样本最小验证：4 张图 `/api/generate` 真实调用全部成功，并补 1 组真实 `/api/adjust` 对话式链路验证通过。
+- 作为 PR #1 后续 UI / 品牌增强提交，已将 `/` 升级为高级官网首页，原工作台迁移到 `/dashboard`，并使用本地 showcase 静态资产展示 4 类真实商品图效果。
 - 同步更新任务、决策、PRD、页面清单和测试验证文档，使文档基线与当前实现一致。
 
 ## 变更范围
@@ -44,11 +45,18 @@
 - `lightdesign-app/src/app/api/generate/route.ts`
 - `lightdesign-app/src/app/api/adjust/route.ts`
 - `lightdesign-app/src/app/page.tsx`
+- `lightdesign-app/src/app/dashboard/page.tsx`
+- `lightdesign-app/src/app/dashboard/page.test.tsx`
 - `lightdesign-app/src/app/create/page.tsx`
 - `lightdesign-app/src/app/generating/page.tsx`
 - `lightdesign-app/src/app/result/page.tsx`
 - `lightdesign-app/src/app/layout.tsx`
+- `lightdesign-app/src/components/Header.tsx`
 - `lightdesign-app/src/components/ErrorCatcher.tsx`
+- `lightdesign-app/public/showcase/icecream.png`
+- `lightdesign-app/public/showcase/sneakers.png`
+- `lightdesign-app/public/showcase/keyboard.png`
+- `lightdesign-app/public/showcase/backpack.png`
 - `lightdesign-app/vitest.config.ts`
 - `lightdesign-app/src/test/setup.ts`
 - `lightdesign-app/src/app/api/generate/route.test.ts`
@@ -85,6 +93,7 @@
 | 真实 APIMART 探针 | `curl` 回退提交 + 轮询 | 通过，拿到图片 URL；未记录 secret 或完整 URL |
 | 真实扩样本（4图） | `POST /api/generate` x4 | 通过，4/4 返回 200 且 `remote-url`，无 mock 回退 |
 | 真实对话链路 | `POST /api/adjust` x1 | 通过，返回 200 且 `remote-url`，`versionId` 存在 |
+| TASK-022 官网首页 | `/` + `/dashboard` 路由走查 | 首页承担品牌展示与 CTA，工作台历史迁移到 `/dashboard` |
 
 ### TASK-014 验证结论
 
@@ -104,6 +113,13 @@
 - JPEG 输出质量约 0.85，PNG 保持 PNG，不改变现有 API 契约。
 - focused 单测 `src/app/create/page.test.tsx` 通过，覆盖大图降采样、小图直通和异常提示。
 
+### TASK-022 验证结论
+
+- `/` 已从工作台改为高级官网首页，包含 Hero、Showcase、Workflow、Quality proof、Use cases、Final CTA 六个分区。
+- 原最近任务/工作台能力迁移到 `/dashboard`，Header、创建页返回、结果页导出 toast 均指向新的工作台路由。
+- showcase 使用 `public/showcase/` 本地静态资源，不新增运行时外部图片请求。
+- `/create`、`/generating`、`/result` 保留现有业务逻辑；本任务不实现 `/result/[taskId]` 深链。
+
 ### TASK-019 验证结论
 
 - 4 张真实商品图调用 `/api/generate` 全部成功，返回远程结果 URL。
@@ -114,13 +130,14 @@
 
 - 外部 API 仍是最大风险点。`https.request` 直连路径在当前环境下仍可能命中非 JSON 响应，因此 `curl` 回退仍是必要兜底。
 - 结果页当前是会话态页面，不支持 `/result/[taskId]` 深链恢复；刷新或直访历史详情仍有上下文丢失风险。
+- TASK-022 新增本地 showcase 静态资产，仓库体积增加约 3.4MB；后续如需继续优化可转 WebP/AVIF。
 - 仍保留少量 Next.js `<img>` warnings，短期不阻断验收，但后续应单独收敛。
 - 真实调用已完成最小采样，但样本量仍偏小，不应被表述为生产级统计结论。
 - 若需要回滚，优先回退 `lightdesign-app/src/app/api/generate/route.ts`、`lightdesign-app/src/app/api/adjust/route.ts`、结果页与测试基线相关文件；文档层回退可单独处理，不影响代码回退判断。
 
 ## 可直接用于 PR 的结论
 
-本轮变更将 LightDesign 的 MVP 验证口径收敛到已验收状态：工程门禁、mock/真实生成链路、上传前降采样、自动化测试和浏览器冒烟测试均有证据，且结果页方向已按对话式调整定稿。当前仍保留更大样本统计与深链恢复等后续风险项，适合在 PR 中明确列为未包含范围。
+本轮变更将 LightDesign 的 MVP 验证口径收敛到已验收状态：工程门禁、mock/真实生成链路、上传前降采样、自动化测试和浏览器冒烟测试均有证据，且结果页方向已按对话式调整定稿。PR #1 后续提交进一步补齐官网化首页、工作台二级路由和本地 showcase 展示，当前仍保留更大样本统计与深链恢复等后续风险项，适合在 PR 中明确列为未包含范围。
 
 ## 建议 Stage 范围
 

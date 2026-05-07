@@ -17,8 +17,51 @@
 
 body {
   font-family: var(--font-sans);
+  background: #fafaf9;
+  color: #18181b;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  font-variant-numeric: tabular-nums;
+}
+
+main {
+  min-height: calc(100dvh - 56px);
+}
+
+::selection {
+  background: color-mix(in oklab, var(--color-accent) 24%, white);
+}
+
+:focus-visible {
+  outline: 2px solid color-mix(in oklab, var(--color-accent) 72%, white);
+  outline-offset: 2px;
+}
+
+button,
+a,
+input,
+textarea {
+  transition-duration: 220ms;
+  transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.surface-grain {
+  position: relative;
+}
+
+.surface-grain::before {
+  content: "";
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  opacity: 0.06;
+  background-image:
+    radial-gradient(circle at 20% 20%, #ffffff 0 1px, transparent 1px),
+    radial-gradient(circle at 80% 40%, #d4d4d8 0 1px, transparent 1px),
+    radial-gradient(circle at 50% 75%, #e4e4e7 0 1px, transparent 1px);
+  background-size: 12px 12px, 14px 14px, 16px 16px;
 }
 
 /* Scrollbar — subtle, not system-default garish */
