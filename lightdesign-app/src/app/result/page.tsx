@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { useGen } from '@/components/GenContext';
 import {
   PaperPlaneTilt, DownloadSimple, Plus,
-  CaretLeft, CaretRight, ArrowLeft, ChatCenteredText,
+  CaretLeft, CaretRight, ArrowLeft, ChatCenteredText, Image as ImageIcon,
 } from '@phosphor-icons/react';
 import type { ChatMessage, ImageVersion, AdjustResult } from '@/lib/types';
 import { PLATFORM_SPECS, STYLE_LABELS } from '@/lib/types';
@@ -29,27 +29,29 @@ export default function ResultPage() {
 
   // 初始化：把首次生成结果作为 v0
   useEffect(() => {
-    if (!result || !input) { router.replace('/create'); return; }
+    if (!result || !input) { router.replace('/dashboard'); return; }
 
     const v0: ImageVersion = {
       id: 'v0',
       imageUrl: result.imageUrl,
-      prompt: (result as any).prompt || '',
+      prompt: result.prompt || '',
       instruction: '初始生成',
       createdAt: result.generatedAt,
     };
-    setVersions([v0]);
-    setCurrentVersion(0);
+    const frame = window.requestAnimationFrame(() => {
+      setVersions([v0]);
+      setCurrentVersion(0);
+      setMessages([
+        {
+          id: uid(),
+          role: 'assistant',
+          content: `已生成${PLATFORM_SPECS[result.platform]?.label || result.platform}主图。直接输入调整要求。`,
+          timestamp: new Date().toISOString(),
+        },
+      ]);
+    });
 
-    setMessages([
-      {
-        id: uid(),
-        role: 'assistant',
-        content: `已根据你的商品信息和"${STYLE_LABELS[result.style] || result.style}"风格生成了${PLATFORM_SPECS[result.platform]?.label || result.platform}平台主图。你可以用自然语言告诉我如何调整，比如"把背景换成蓝色"、"文字放大一些"、"商品往左移"。`,
-        timestamp: new Date().toISOString(),
-        imageUrl: result.imageUrl,
-      },
-    ]);
+    return () => window.cancelAnimationFrame(frame);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // 自动滚动
@@ -126,10 +128,10 @@ export default function ResultPage() {
         imageUrl: data.imageUrl,
       };
       setMessages(prev => [...prev, assistantMsg]);
-    } catch (e: any) {
+    } catch (e: unknown) {
       const errMsg: ChatMessage = {
         id: uid(), role: 'assistant',
-        content: `抱歉，调整失败: ${e.message || '未知错误'}。请重试。`,
+        content: `抱歉，调整失败: ${e instanceof Error ? e.message : '未知错误'}。请重试。`,
         timestamp: new Date().toISOString(),
       };
       setMessages(prev => [...prev, errMsg]);
@@ -175,20 +177,35 @@ export default function ResultPage() {
     }
   };
 
-  const activeImage = versions[currentVersion]?.imageUrl || result?.imageUrl || '';
+  const activeImage = versions[currentVersion]?.imageUrl || result?.imageUrl || null;
   const spec = result ? PLATFORM_SPECS[result.platform] : null;
 
+  // 无数据时等待重定向，不渲染
+  if (!result || !input) {
+    return (
+      <div className="flex h-[calc(100dvh-56px)] items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-[3px] border-amber-200 border-t-amber-500" />
+      </div>
+    );
+  }
+
   return (
-    <div className="flex h-[calc(100dvh-56px)]">
+    <div className="flex h-[calc(100dvh-56px)] bg-zinc-50">
       {/* ====== 左侧：图片预览区 ====== */}
-      <div className="flex flex-1 flex-col items-center justify-center bg-zinc-100 p-6">
+      <div className="flex flex-1 flex-col items-center justify-center bg-zinc-100/90 p-6">
         {/* 图片 */}
         <div className="relative flex max-h-full max-w-full items-center justify-center">
-          <img
-            src={activeImage}
-            alt="产品主图"
-            className="max-h-[70dvh] max-w-full rounded-2xl object-contain shadow-2xl"
-          />
+          {activeImage ? (
+            <img
+              src={activeImage}
+              alt={`产品主图预览，当前为第 ${currentVersion + 1} 版`}
+              className="max-h-[70dvh] max-w-full rounded-2xl border border-zinc-200/80 object-contain shadow-[0_24px_54px_-36px_rgba(24,24,27,0.45)]"
+            />
+          ) : (
+            <div className="flex h-80 w-80 items-center justify-center rounded-2xl bg-zinc-200">
+              <ImageIcon size={48} weight="duotone" className="text-zinc-400" />
+            </div>
+          )}
           {/* Loading overlay */}
           {loading && (
             <div className="absolute inset-0 flex items-center justify-center rounded-2xl bg-black/20 backdrop-blur-sm">
@@ -206,7 +223,7 @@ export default function ResultPage() {
             <button
               onClick={() => switchVersion(Math.max(0, currentVersion - 1))}
               disabled={currentVersion === 0}
-              className="inline-flex items-center gap-1 rounded-xl border border-zinc-200 bg-white/80 px-3 py-1.5 text-xs font-medium text-zinc-500 transition hover:bg-white active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-30"
+              className="inline-flex items-center gap-1 rounded-xl border border-zinc-200 bg-white/80 px-3 py-1.5 text-xs font-medium text-zinc-500 transition hover:bg-white focus-visible:outline-none active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-30"
             >
               <CaretLeft size={12} weight="bold" />
               上一版
@@ -218,7 +235,7 @@ export default function ResultPage() {
                   onClick={() => switchVersion(i)}
                   className={`h-2.5 w-2.5 rounded-full transition ${
                     i === currentVersion
-                      ? 'bg-amber-500 shadow-[0_0_0_3px_rgba(217,119,6,.25)]'
+                      ? 'bg-amber-600 shadow-[0_0_0_3px_rgba(217,119,6,.25)]'
                       : 'bg-zinc-300 hover:bg-zinc-400'
                   }`}
                   title={`版本 ${i + 1}`}
@@ -228,7 +245,7 @@ export default function ResultPage() {
             <button
               onClick={() => switchVersion(Math.min(versions.length - 1, currentVersion + 1))}
               disabled={currentVersion === versions.length - 1}
-              className="inline-flex items-center gap-1 rounded-xl border border-zinc-200 bg-white/80 px-3 py-1.5 text-xs font-medium text-zinc-500 transition hover:bg-white active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-30"
+              className="inline-flex items-center gap-1 rounded-xl border border-zinc-200 bg-white/80 px-3 py-1.5 text-xs font-medium text-zinc-500 transition hover:bg-white focus-visible:outline-none active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-30"
             >
               下一版
               <CaretRight size={12} weight="bold" />
@@ -247,24 +264,24 @@ export default function ResultPage() {
             <span>{spec.width}×{spec.height}px</span>
             <button
               onClick={handleExport}
-              className="ml-3 inline-flex items-center gap-1.5 rounded-xl bg-amber-500 px-3 py-1.5 text-xs font-semibold text-white shadow-sm shadow-amber-200 transition hover:bg-amber-600 active:scale-[0.98]"
+              className="ml-3 inline-flex items-center gap-1.5 rounded-xl bg-amber-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm shadow-amber-200 transition hover:-translate-y-0.5 hover:bg-amber-700 focus-visible:outline-none active:scale-[0.98]"
             >
               <DownloadSimple size={12} weight="bold" />
               导出此版本
             </button>
             <Link
-              href="/create"
-              className="inline-flex items-center gap-1.5 rounded-xl bg-white/80 px-3 py-1.5 text-xs font-medium text-zinc-500 transition hover:bg-white active:scale-[0.98]"
+              href="/dashboard"
+              className="inline-flex items-center gap-1.5 rounded-xl bg-white/80 px-3 py-1.5 text-xs font-medium text-zinc-500 transition hover:bg-white focus-visible:outline-none active:scale-[0.98]"
             >
               <Plus size={12} weight="bold" />
-              新建任务
+              新建
             </Link>
           </div>
         )}
       </div>
 
       {/* ====== 右侧：对话面板 ====== */}
-      <div className="flex w-[380px] flex-shrink-0 flex-col border-l border-zinc-200 bg-white">
+      <div className="flex w-[390px] flex-shrink-0 flex-col border-l border-zinc-200/80 bg-white">
         {/* 标题 */}
         <div className="flex items-center justify-between border-b border-zinc-100 px-5 py-4">
           <div className="flex items-center gap-2">
@@ -277,7 +294,7 @@ export default function ResultPage() {
         </div>
 
         {/* 消息列表 */}
-        <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
+        <div className="flex-1 space-y-4 overflow-y-auto px-4 py-4">
           {messages.map(m => (
             <div key={m.id} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
               <div className={`max-w-[85%] ${m.role === 'user' ? 'order-1' : ''}`}>
@@ -285,7 +302,7 @@ export default function ResultPage() {
                 <div
                   className={`rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${
                     m.role === 'user'
-                      ? 'bg-amber-500 text-white rounded-br-md'
+                      ? 'rounded-br-md bg-amber-600 text-white'
                       : 'bg-zinc-100 text-zinc-700 rounded-bl-md'
                   }`}
                 >
@@ -295,7 +312,7 @@ export default function ResultPage() {
                 {/* 附带的小缩略图 */}
                 {m.imageUrl && (
                   <div className="mt-2 overflow-hidden rounded-lg border border-zinc-100 shadow-sm">
-                    <img src={m.imageUrl} alt="" className="w-full" />
+                    <img src={m.imageUrl} alt={`调整结果缩略图，消息时间 ${new Date(m.timestamp).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}`} className="w-full" />
                   </div>
                 )}
 
@@ -335,16 +352,16 @@ export default function ResultPage() {
               value={draft}
               onChange={e => setDraft(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder={'描述你想怎么调整，如「把背景换成蓝色」'}
+              placeholder={'描述你想怎么调整，如「把背景改成米白」'}
               rows={2}
               maxLength={200}
               disabled={loading}
-              className="w-full resize-none rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-2.5 pr-12 text-sm outline-none transition focus:border-amber-400 focus:bg-white focus:ring-2 focus:ring-amber-100 disabled:opacity-50"
+              className="w-full resize-none rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-2.5 pr-12 text-sm outline-none transition focus:border-amber-500 focus:bg-white focus:ring-2 focus:ring-amber-100 disabled:opacity-50"
             />
             <button
               onClick={handleSend}
               disabled={!draft.trim() || loading}
-              className="absolute bottom-2 right-2 flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500 text-white transition hover:bg-amber-600 active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-zinc-300"
+              className="absolute bottom-2 right-2 flex h-8 w-8 items-center justify-center rounded-lg bg-amber-600 text-white transition hover:-translate-y-0.5 hover:bg-amber-700 focus-visible:outline-none active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-zinc-300"
             >
               <PaperPlaneTilt size={14} weight="fill" />
             </button>
@@ -361,8 +378,8 @@ export default function ResultPage() {
         <div className="fixed bottom-8 left-1/2 z-50 flex -translate-x-1/2 items-center gap-3 rounded-xl bg-zinc-900 px-5 py-3 text-sm font-medium text-white shadow-2xl">
           {toast}
           <button
-            onClick={() => router.push('/')}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-amber-500 px-3 py-1 text-xs font-semibold text-white transition hover:bg-amber-600 active:scale-[0.98]"
+            onClick={() => router.push('/dashboard')}
+            className="inline-flex items-center gap-1.5 rounded-lg bg-amber-600 px-3 py-1 text-xs font-semibold text-white transition hover:bg-amber-700 focus-visible:outline-none active:scale-[0.98]"
           >
             <ArrowLeft size={12} weight="bold" />
             返回工作台

@@ -8,7 +8,7 @@ import type { GenerationResult } from '@/lib/types';
 
 export default function GeneratingPage() {
   const router = useRouter();
-  const { input, previewUrl, setResult } = useGen();
+  const { input, previewUrl, setResult, uploadedFile } = useGen();
   const [progress, setProgress] = useState(0);
   const [timeLeft, setTimeLeft] = useState(30);
   const [status, setStatus] = useState<'loading' | 'done' | 'error'>('loading');
@@ -16,7 +16,7 @@ export default function GeneratingPage() {
   const doneRef = useRef(false);
 
   useEffect(() => {
-    if (!input || doneRef.current) { if (!input) router.replace('/create'); return; }
+    if (!input || doneRef.current) { if (!input) router.replace('/dashboard'); return; }
     doneRef.current = true;
 
     const startTime = Date.now();
@@ -34,6 +34,7 @@ export default function GeneratingPage() {
     if (input.selling3) formData.append('selling3', input.selling3);
     formData.append('platform', input.platform);
     formData.append('style', input.style);
+    if (uploadedFile) formData.append('image', uploadedFile);
 
     fetch('/api/generate', { method: 'POST', body: formData })
       .then(async res => {
@@ -55,9 +56,9 @@ export default function GeneratingPage() {
   return (
     <div className="mx-auto flex max-w-lg flex-col items-center px-6 py-24">
       {/* Image preview skeleton */}
-      <div className="relative mb-10 flex h-80 w-80 items-center justify-center overflow-hidden rounded-[2rem] bg-zinc-100">
+      <div className="surface-grain relative mb-10 flex h-80 w-80 items-center justify-center overflow-hidden rounded-[2rem] border border-zinc-200/70 bg-white shadow-[0_24px_50px_-36px_rgba(24,24,27,0.45)]">
         {previewUrl ? (
-          <img src={previewUrl} alt="" className="h-full w-full object-cover opacity-60" />
+          <img src={previewUrl} alt="当前待生成的商品照片预览" className="h-full w-full object-cover opacity-70" />
         ) : (
           <ImageIcon size={56} weight="duotone" className="text-zinc-300" />
         )}
@@ -72,7 +73,7 @@ export default function GeneratingPage() {
       {/* Progress bar */}
       <div className="mb-5 h-1.5 w-80 overflow-hidden rounded-full bg-zinc-200">
         <div
-          className="h-full rounded-full bg-amber-500 transition-all duration-500 ease-out"
+          className="h-full rounded-full bg-amber-600 transition-all duration-500 ease-out"
           style={{ width: `${progress}%` }}
         />
       </div>
@@ -80,7 +81,7 @@ export default function GeneratingPage() {
       {/* Status */}
       {status === 'loading' && (
         <div className="text-center">
-          <p className="text-sm text-zinc-500">
+          <p className="text-sm font-medium text-zinc-600">
             生成中<span className="animate-pulse">...</span>
           </p>
           <p className="mt-1 text-xs text-zinc-400">预计还需 {timeLeft} 秒</p>
@@ -101,13 +102,13 @@ export default function GeneratingPage() {
           <div className="mt-6 flex gap-3">
             <button
               onClick={() => { doneRef.current = false; router.refresh(); }}
-              className="rounded-xl bg-amber-500 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-amber-600 active:scale-[0.98]"
+            className="rounded-xl bg-amber-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:-translate-y-0.5 hover:bg-amber-700 focus-visible:outline-none active:scale-[0.98]"
             >
               重试
             </button>
             <button
-              onClick={() => router.push('/create')}
-              className="rounded-xl bg-zinc-100 px-5 py-2.5 text-sm font-medium text-zinc-600 transition hover:bg-zinc-200 active:scale-[0.98]"
+              onClick={() => router.push('/dashboard')}
+              className="rounded-xl bg-zinc-100 px-5 py-2.5 text-sm font-medium text-zinc-600 transition hover:bg-zinc-200 focus-visible:outline-none active:scale-[0.98]"
             >
               返回编辑
             </button>
@@ -117,8 +118,8 @@ export default function GeneratingPage() {
 
       {status === 'loading' && (
         <button
-          onClick={() => router.push('/create')}
-          className="mt-10 rounded-xl bg-zinc-100 px-5 py-2.5 text-sm font-medium text-zinc-500 transition hover:bg-zinc-200 active:scale-[0.98]"
+          onClick={() => router.push('/dashboard')}
+          className="mt-10 rounded-xl bg-zinc-100 px-5 py-2.5 text-sm font-medium text-zinc-500 transition hover:bg-zinc-200 focus-visible:outline-none active:scale-[0.98]"
         >
           取消生成
         </button>
