@@ -50,6 +50,7 @@
 | TASK-020 | 上传前图片压缩 / 降采样实现 | engineer-* | done | P1 | TASK-016 / TASK-019 | create/page.tsx + create/page.test.tsx |
 | TASK-021 | 现有网站 UI 高级化重设计派单 | ui / engineer-* | done | P1 | TASK-020 | 页面视觉与交互优化实现 + 验收记录 |
 | TASK-022 | 高级官网首页与全站视觉统一 | ui / engineer-* | done | P1 | TASK-021 | 新官网首页 + /dashboard 迁移 + 本地 showcase 资产 + 验证记录 |
+| TASK-023 | 删除冗余信息并重画核心页面 | ui / engineer-* | done | P1 | TASK-022 | 精简首页 + 工作台创作整合 + 结果页信息收敛 |
 
 ---
 
@@ -321,6 +322,21 @@
 - next_step：执行 unit / e2e / lint / build 与浏览器桌面、移动走查；作为 PR #1 follow-up commit 推送。
 - eta：已完成。
 
+### TASK-023：删除冗余信息并重画核心页面
+- owner_role：ui / engineer-*
+- status：done
+- 背景：用户要求删除重复信息和冗余信息，并以 GPT image 2 方向重画网站核心体验。
+- 目标：将网站收敛为首页、工作台、生成结果调整页三类核心界面，减少重复证明、重复 CTA 和长说明。
+- 范围内：首页压缩为 Hero + 商品图示意；工作台直接包含图片上传、卖点填写、平台/风格选择和最近任务；`/create` 作为兼容入口复用工作台创作组件；结果页首条提示与操作文案收敛；测试与 E2E 起点更新到 `/dashboard`。
+- 范围外：新增外部图片请求；修改 API 契约；实现 `/result/[taskId]` 深链；新增依赖。
+- 输入：用户本轮“删除冗余并重画网站”指令、TASK-022 当前 UI 基线。
+- 输出：`CreateStudio` 共享组件、精简首页、整合工作台、结果页微调、相关测试更新。
+- 验收标准：工作台首屏可直接上传和填写；首页不再堆叠重复 proof/use case/final CTA 信息；现有生成、导出、最近任务链路不回归。
+- 风险：`/create` 变为兼容入口后，后续导航需统一优先指向 `/dashboard`。
+- decision_needed：无。
+- next_step：作为 PR #1 follow-up commit 推送。
+- eta：已完成。
+
 ### CP-016：真实商品图采样评估 checkpoint
 - task_id：TASK-016
 - owner_role：test / product
@@ -402,6 +418,18 @@
 - risks：`/result` 仍依赖当前会话态，刷新或直访恢复能力不在本任务范围；本地商品图资产增加仓库体积约 3.4MB。
 - decision_needed：无。
 - next_step：完成自动化验证与浏览器走查后推送 follow-up commit 到现有 PR。
+- eta：已完成。
+- orchestrator 裁决：通过并进入 PR follow-up 交付。
+
+### CP-023：核心页面重画 checkpoint
+- task_id：TASK-023
+- owner_role：orchestrator / ui / engineer-*
+- status：done
+- progress：已删除首页冗余 section，保留核心价值说明与商品图示意；`/dashboard` 已整合图片上传、卖点填写、平台/风格选择和最近任务；`/create` 复用 `CreateStudio` 作为兼容入口；结果页对话首条说明已压缩。
+- deliverables：`lightdesign-app/src/app/page.tsx`、`lightdesign-app/src/app/dashboard/page.tsx`、`lightdesign-app/src/components/CreateStudio.tsx`、`lightdesign-app/src/app/result/page.tsx`、相关测试。
+- risks：保留动态 `<img>` warning；结果页仍是会话态页面。
+- decision_needed：无。
+- next_step：推送 follow-up commit 到现有 PR。
 - eta：已完成。
 - orchestrator 裁决：通过并进入 PR follow-up 交付。
 

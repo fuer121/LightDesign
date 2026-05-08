@@ -58,7 +58,7 @@ describe('ResultPage', () => {
       expect(screen.getByText('对话调整')).toBeInTheDocument();
     });
     await waitFor(() => {
-      expect(screen.getByText(/已根据你的商品信息/)).toBeInTheDocument();
+      expect(screen.getByText(/已生成通用主图/)).toBeInTheDocument();
     });
 
     fireEvent.click(screen.getByRole('button', { name: '导出此版本' }));

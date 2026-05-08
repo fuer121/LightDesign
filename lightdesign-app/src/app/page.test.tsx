@@ -16,27 +16,24 @@ vi.mock('next/image', () => ({
 }));
 
 describe('HomePage', () => {
-  test('renders premium landing sections with create and dashboard entry points', () => {
+  test('renders concise landing page with dashboard entry point', () => {
     render(<HomePage />);
 
-    expect(screen.getByText('让商品图像完成成交前的第一眼。')).toBeInTheDocument();
-    expect(screen.getByText('横向滚动的电商图效果墙')).toBeInTheDocument();
-    expect(screen.getByText('从商品照片到可调整结果，只保留必要步骤。')).toBeInTheDocument();
-    expect(screen.getByText('真实扩样本链路已经跑通。')).toBeInTheDocument();
-    expect(screen.getByText('覆盖常见电商主图场景。')).toBeInTheDocument();
+    expect(screen.getByText('GPT image 2 电商图工作台')).toBeInTheDocument();
+    expect(screen.getByText('商品图示意')).toBeInTheDocument();
+    expect(screen.getByText('上传')).toBeInTheDocument();
+    expect(screen.getByText('调整')).toBeInTheDocument();
 
-    const createLinks = screen.getAllByRole('link', { name: /开始创作/ });
-    expect(createLinks.length).toBeGreaterThanOrEqual(2);
-    expect(createLinks.every(link => link.getAttribute('href') === '/create')).toBe(true);
-    expect(screen.getByRole('link', { name: '查看工作台' })).toHaveAttribute('href', '/dashboard');
+    expect(screen.getByRole('link', { name: /进入工作台/ })).toHaveAttribute('href', '/dashboard');
+    expect(screen.getByRole('link', { name: '查看效果' })).toHaveAttribute('href', '#showcase');
   });
 
   test('uses local showcase assets for four product categories', () => {
     render(<HomePage />);
 
-    expect(screen.getByAltText('Gelato 甜品杯 高级电商图示意')).toHaveAttribute('src', '/showcase/icecream.png');
-    expect(screen.getByAltText('白色篮球鞋 高级电商图示意')).toHaveAttribute('src', '/showcase/sneakers.png');
-    expect(screen.getByAltText('RGB 机械键盘 高级电商图示意')).toHaveAttribute('src', '/showcase/keyboard.png');
-    expect(screen.getByAltText('战术徒步背包 高级电商图示意')).toHaveAttribute('src', '/showcase/backpack.png');
+    expect(screen.getByAltText('甜品杯 商品图示意')).toHaveAttribute('src', '/showcase/icecream.png');
+    expect(screen.getByAltText('篮球鞋 商品图示意')).toHaveAttribute('src', '/showcase/sneakers.png');
+    expect(screen.getByAltText('机械键盘 商品图示意')).toHaveAttribute('src', '/showcase/keyboard.png');
+    expect(screen.getByAltText('徒步背包 商品图示意')).toHaveAttribute('src', '/showcase/backpack.png');
   });
 });

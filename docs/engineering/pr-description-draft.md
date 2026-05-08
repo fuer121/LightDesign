@@ -1,6 +1,6 @@
 # TASK-017 PR 交付材料草案
 
-- 更新时间：2026-05-07
+- 更新时间：2026-05-08
 - 责任角色：orchestrator / writer
 - 关联任务：TASK-017
 - 基于材料：当前 git diff、`docs/testing-validation/mvp-validation-report.md`、`docs/testing-validation/task-014-apimart-img2img-validation.md`、`docs/testing-validation/task-016-quality-cost-stability.md`、`docs/testing-validation/task-019-real-sampling-report.md`、`TASKS.md`、`DECISIONS.md`
@@ -15,6 +15,7 @@
 - 新增最小自动化测试基线与浏览器冒烟测试，补齐 API、页面和工作台历史的可重复验证能力。
 - 已完成真实商品图扩样本最小验证：4 张图 `/api/generate` 真实调用全部成功，并补 1 组真实 `/api/adjust` 对话式链路验证通过。
 - 作为 PR #1 后续 UI / 品牌增强提交，已将 `/` 升级为高级官网首页，原工作台迁移到 `/dashboard`，并使用本地 showcase 静态资产展示 4 类真实商品图效果。
+- 已按 TASK-023 删除重复信息与冗余区块：首页收敛为 Hero + 商品图示意，工作台直接承载上传、填写、生成入口，结果页保留图片与对话调整主任务。
 - 同步更新任务、决策、PRD、页面清单和测试验证文档，使文档基线与当前实现一致。
 
 ## 变更范围
@@ -52,6 +53,7 @@
 - `lightdesign-app/src/app/result/page.tsx`
 - `lightdesign-app/src/app/layout.tsx`
 - `lightdesign-app/src/components/Header.tsx`
+- `lightdesign-app/src/components/CreateStudio.tsx`
 - `lightdesign-app/src/components/ErrorCatcher.tsx`
 - `lightdesign-app/public/showcase/icecream.png`
 - `lightdesign-app/public/showcase/sneakers.png`
@@ -94,6 +96,7 @@
 | 真实扩样本（4图） | `POST /api/generate` x4 | 通过，4/4 返回 200 且 `remote-url`，无 mock 回退 |
 | 真实对话链路 | `POST /api/adjust` x1 | 通过，返回 200 且 `remote-url`，`versionId` 存在 |
 | TASK-022 官网首页 | `/` + `/dashboard` 路由走查 | 首页承担品牌展示与 CTA，工作台历史迁移到 `/dashboard` |
+| TASK-023 核心页面重画 | `npm run test:unit` / `npm run test:e2e` / 浏览器截图 | 通过，工作台直接包含上传填写，首页冗余信息已删除 |
 
 ### TASK-014 验证结论
 
@@ -115,10 +118,16 @@
 
 ### TASK-022 验证结论
 
-- `/` 已从工作台改为高级官网首页，包含 Hero、Showcase、Workflow、Quality proof、Use cases、Final CTA 六个分区。
-- 原最近任务/工作台能力迁移到 `/dashboard`，Header、创建页返回、结果页导出 toast 均指向新的工作台路由。
+- `/` 已从工作台改为官网首页，并在 TASK-023 中进一步删除 Quality proof、Use cases、Final CTA 等冗余区块，保留 Hero 与商品图示意。
+- 原最近任务/工作台能力迁移到 `/dashboard`，并在 TASK-023 中整合上传、填写、平台/风格选择，作为主创作入口。
 - showcase 使用 `public/showcase/` 本地静态资源，不新增运行时外部图片请求。
 - `/create`、`/generating`、`/result` 保留现有业务逻辑；本任务不实现 `/result/[taskId]` 深链。
+
+### TASK-023 验证结论
+
+- `CreateStudio` 已抽为共享组件，`/dashboard` 与 `/create` 复用同一套上传与填写逻辑，减少页面重复实现。
+- E2E 主流程已从 `/dashboard` 开始，覆盖上传、填写、生成、结果页、导出和最近任务。
+- 结果页初始对话提示已压缩，保留用户继续输入调整指令的核心任务。
 
 ### TASK-019 验证结论
 

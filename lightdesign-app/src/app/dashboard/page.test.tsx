@@ -14,6 +14,15 @@ vi.mock('next/link', () => ({
   ),
 }));
 
+vi.mock('@/components/GenContext', () => ({
+  useGen: () => ({
+    setInput: vi.fn(),
+    setUploadedFile: vi.fn(),
+    setPreviewUrl: vi.fn(),
+    previewUrl: null,
+  }),
+}));
+
 describe('DashboardPage', () => {
   beforeEach(() => {
     push.mockReset();
@@ -39,10 +48,11 @@ describe('DashboardPage', () => {
 
     render(<DashboardPage />);
 
+    expect(screen.getByText('上传商品图，填写卖点')).toBeInTheDocument();
     await waitFor(() => {
       expect(screen.getByText('商品主图 · 简约白底')).toBeInTheDocument();
     });
     expect(screen.getByText(/亚马逊 · 简约白底/)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: '复用模板' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '复用' })).toBeInTheDocument();
   });
 });

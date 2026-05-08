@@ -11,7 +11,7 @@ test('completes the mocked create to export flow and shows the recent task on th
     localStorage.clear();
   });
 
-  await page.goto('/create');
+  await page.goto('/dashboard');
 
   await page.locator('input[type="file"]').setInputFiles({
     name: 'sample-product.png',

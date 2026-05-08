@@ -29,7 +29,7 @@ export default function ResultPage() {
 
   // 初始化：把首次生成结果作为 v0
   useEffect(() => {
-    if (!result || !input) { router.replace('/create'); return; }
+    if (!result || !input) { router.replace('/dashboard'); return; }
 
     const v0: ImageVersion = {
       id: 'v0',
@@ -45,9 +45,8 @@ export default function ResultPage() {
         {
           id: uid(),
           role: 'assistant',
-          content: `已根据你的商品信息和"${STYLE_LABELS[result.style] || result.style}"风格生成了${PLATFORM_SPECS[result.platform]?.label || result.platform}平台主图。你可以用自然语言告诉我如何调整，比如"把背景换成蓝色"、"文字放大一些"、"商品往左移"。`,
+          content: `已生成${PLATFORM_SPECS[result.platform]?.label || result.platform}主图。直接输入调整要求。`,
           timestamp: new Date().toISOString(),
-          imageUrl: result.imageUrl,
         },
       ]);
     });
@@ -271,11 +270,11 @@ export default function ResultPage() {
               导出此版本
             </button>
             <Link
-              href="/create"
+              href="/dashboard"
               className="inline-flex items-center gap-1.5 rounded-xl bg-white/80 px-3 py-1.5 text-xs font-medium text-zinc-500 transition hover:bg-white focus-visible:outline-none active:scale-[0.98]"
             >
               <Plus size={12} weight="bold" />
-              新建任务
+              新建
             </Link>
           </div>
         )}

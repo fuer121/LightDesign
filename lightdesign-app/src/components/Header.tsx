@@ -22,10 +22,10 @@ export default function Header() {
           工作台
         </Link>
         <Link
-          href="/create"
+          href="/dashboard"
           className="hidden items-center gap-1.5 rounded-full bg-zinc-950 px-3.5 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-amber-700 focus-visible:outline-none sm:inline-flex"
         >
-          开始创作
+          开始
           <ArrowRight size={13} weight="bold" />
         </Link>
         <div className="flex h-8 w-8 items-center justify-center rounded-full bg-zinc-100 text-zinc-400 transition hover:bg-zinc-200">

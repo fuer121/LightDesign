@@ -16,7 +16,7 @@ export default function GeneratingPage() {
   const doneRef = useRef(false);
 
   useEffect(() => {
-    if (!input || doneRef.current) { if (!input) router.replace('/create'); return; }
+    if (!input || doneRef.current) { if (!input) router.replace('/dashboard'); return; }
     doneRef.current = true;
 
     const startTime = Date.now();
@@ -107,7 +107,7 @@ export default function GeneratingPage() {
               重试
             </button>
             <button
-              onClick={() => router.push('/create')}
+              onClick={() => router.push('/dashboard')}
               className="rounded-xl bg-zinc-100 px-5 py-2.5 text-sm font-medium text-zinc-600 transition hover:bg-zinc-200 focus-visible:outline-none active:scale-[0.98]"
             >
               返回编辑
@@ -118,7 +118,7 @@ export default function GeneratingPage() {
 
       {status === 'loading' && (
         <button
-          onClick={() => router.push('/create')}
+          onClick={() => router.push('/dashboard')}
           className="mt-10 rounded-xl bg-zinc-100 px-5 py-2.5 text-sm font-medium text-zinc-500 transition hover:bg-zinc-200 focus-visible:outline-none active:scale-[0.98]"
         >
           取消生成
